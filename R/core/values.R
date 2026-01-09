@@ -111,7 +111,8 @@ InputProxy <- R6::R6Class("InputProxy",
 
     # Get input value by name
     get = function(name) {
-      # Always return a string, never throw an error
+      # Return appropriate type (string or numeric), never throw an error
+      # Numeric values are returned as numeric to support arithmetic operations
       # This prevents "object 'input.name' not found" errors
 
       # Validate name is a string
@@ -143,7 +144,14 @@ InputProxy <- R6::R6Class("InputProxy",
                 # Check if value exists
                 if (!is.null(value)) {
                   # Convert to character and trim whitespace
-                  value_str <- as.character(value)
+                  value_str <- trimws(as.character(value))
+                  # Try to convert to numeric if the value looks numeric
+                  # This allows numericInput values to work in arithmetic operations
+                  if (value_str != "" && !is.na(suppressWarnings(as.numeric(value_str)))) {
+                    # Value is numeric - return as numeric
+                    return(as.numeric(value_str))
+                  }
+                  # Value is not numeric or is empty - return as string
                   return(value_str)
                 }
                 # If value is NULL in state manager, it means it hasn't been set yet.
@@ -163,12 +171,13 @@ InputProxy <- R6::R6Class("InputProxy",
         }
       )
 
-      # Ensure we always return a string
-      if (is.null(result) || length(result) == 0) {
+      # Ensure we always return a value (string or numeric)
+      if (is.null(result) || (is.character(result) && length(result) == 0)) {
         return("")
       }
 
-      as.character(result)
+      # Return result as-is (could be string or numeric)
+      result
     }
   )
 )

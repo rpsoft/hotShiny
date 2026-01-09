@@ -807,6 +807,40 @@ HotShinyApp <- R6::R6Class("HotShinyApp",
             ui_env$textOutput <- function(outputId) {
               list(name = "div", attribs = list(id = outputId, class = "shiny-text-output", `data-output-id` = outputId), children = list())
             }
+            ui_env$numericInput <- function(inputId, label, value = 0, min = NA, max = NA, step = NA) {
+              attrs <- list(
+                type = "number",
+                id = inputId,
+                name = inputId,
+                value = value,
+                `data-input-id` = inputId
+              )
+              if (!is.na(min)) attrs$min <- min
+              if (!is.na(max)) attrs$max <- max
+              if (!is.na(step)) attrs$step <- step
+              
+              # Wrap in a div with label
+              list(
+                name = "div",
+                attribs = list(class = "form-group"),
+                children = list(
+                  list(name = "label", attribs = list(`for` = inputId), children = list(label)),
+                  list(name = "input", attribs = attrs, children = list())
+                )
+              )
+            }
+            ui_env$plotOutput <- function(outputId, width = "100%", height = "400px") {
+              list(
+                name = "div",
+                attribs = list(
+                  id = outputId,
+                  class = "shiny-plot-output",
+                  `data-output-id` = outputId,
+                  style = paste0("width:", width, "; height:", height, ";")
+                ),
+                children = list()
+              )
+            }
 
             # Evaluate UI function in this environment
             # Don't modify the original UI function's environment - create a copy

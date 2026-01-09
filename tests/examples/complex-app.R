@@ -21,7 +21,7 @@ server <- function(input, output, session) {
   })
   
   product_value <- reactive({
-    input$a * input$b
+    input$a + input$b
   })
   
   # Dependent reactive
