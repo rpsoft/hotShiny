@@ -5,7 +5,7 @@ library(hotShiny)
 
 ui <- function() {
   div(
-    h1("Complex HotShiny Appss"),
+    h1("Complex HotShiny Appssss"),
     numericInput("a", "Value A:", value = 1),
     numericInput("b", "Value B:", value = 2),
     textOutput("sum"),
@@ -25,7 +25,7 @@ server <- function(input, output, session) {
   })
   
   product_value <- reactive({
-    input$a + input$b
+    input$a * input$b
   })
   
   # Dependent reactive

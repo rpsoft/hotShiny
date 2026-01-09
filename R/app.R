@@ -186,6 +186,92 @@ app <- function(ui, server, ...) {
   app_obj
 }
 
+#' Run a hotShiny application from a file
+#'
+#' Loads an application file, creates the app, enables hot reload with file watching,
+#' and starts the server. This is the recommended way to run hotShiny apps as it
+#' automatically sets up file monitoring for hot reloading.
+#'
+#' @param app_file Path to the R file containing `ui` and `server` function definitions
+#' @param port Port number to run the app on (default: 3838)
+#' @param host Host address to bind to (default: "127.0.0.1")
+#' @param watch_paths Optional additional paths to watch for changes. If NULL,
+#'   watches the app file and its directory. Can be a character vector of file
+#'   or directory paths.
+#' @param ... Additional arguments passed to the app's `runApp()` method
+#' @return The app object (invisibly)
+#' @export
+runApp <- function(app_file, port = 3838, host = "127.0.0.1", watch_paths = NULL, ...) {
+  # Validate app_file
+  if (missing(app_file) || is.null(app_file)) {
+    stop("app_file is required. Please provide the path to your app file.")
+  }
+  
+  if (!file.exists(app_file)) {
+    stop("App file not found: ", app_file)
+  }
+  
+  # Normalize the app file path
+  app_file <- normalizePath(app_file)
+  app_dir <- dirname(app_file)
+  
+  # Create an environment to load the app file
+  app_env <- new.env(parent = globalenv())
+  
+  # Source the app file to get ui and server functions
+  tryCatch({
+    sys.source(app_file, envir = app_env)
+  }, error = function(e) {
+    stop("Error loading app file '", app_file, "': ", conditionMessage(e))
+  })
+  
+  # Check if ui and server exist
+  if (!exists("ui", envir = app_env)) {
+    stop("App file '", app_file, "' must define a 'ui' function or object")
+  }
+  if (!exists("server", envir = app_env)) {
+    stop("App file '", app_file, "' must define a 'server' function")
+  }
+  
+  # Get ui and server
+  ui <- get("ui", envir = app_env)
+  server <- get("server", envir = app_env)
+  
+  # Create the app
+  app_obj <- app(ui = ui, server = server)
+  
+  # Set up watch paths for hot reload
+  # Default: watch the app file and its directory (for dependencies)
+  if (is.null(watch_paths)) {
+    watch_paths <- c(app_file, app_dir)
+  } else {
+    # Ensure app file and directory are included in watch paths
+    # Normalize all paths for comparison
+    normalized_watch <- vapply(watch_paths, normalizePath, character(1), mustWork = FALSE)
+    normalized_app_file <- normalizePath(app_file)
+    normalized_app_dir <- normalizePath(app_dir)
+    
+    # Add app file and directory if not already included
+    if (!normalized_app_file %in% normalized_watch) {
+      watch_paths <- c(watch_paths, app_file)
+    }
+    if (!normalized_app_dir %in% normalized_watch) {
+      watch_paths <- c(watch_paths, app_dir)
+    }
+  }
+  
+  # Enable hot reload with file watching
+  message("Enabling hot reload with file watching...")
+  message("Watching: ", paste(watch_paths, collapse = ", "))
+  enable_hot_reload(app_obj, watch_paths = watch_paths)
+  
+  # Run the app
+  message("Starting hotShiny app from: ", app_file)
+  app_obj$runApp(host = host, port = port, ...)
+  
+  invisible(app_obj)
+}
+
 #' HotShiny App
 #'
 #' Main application object

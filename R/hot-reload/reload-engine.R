@@ -235,11 +235,138 @@ HotReloadEngine <- R6::R6Class("HotReloadEngine",
           self$app$server_func(input, output, NULL)
         }
         
+        # CRITICAL: Register reactive expressions by variable name (same as in runApp)
+        # Scan environments for ReactiveProxy objects
+        message("[HotReload] Scanning environments for reactive sources...")
+        envs_to_scan <- list()
+        
+        # Scan environments captured in graph nodes
+        graph_nodes <- new_builder$get_graph()$get_all_nodes()
+        for (node in graph_nodes) {
+          if (!is.null(node$env) && is.environment(node$env)) {
+            envs_to_scan <- c(envs_to_scan, list(node$env))
+          }
+        }
+        
+        # Scan all environments for ReactiveProxy objects
+        for (scan_env in envs_to_scan) {
+          tryCatch(
+            {
+              env_vars <- ls(envir = scan_env, all.names = TRUE)
+              for (var_name in env_vars) {
+                tryCatch(
+                  {
+                    var_value <- get(var_name, envir = scan_env)
+                    if (inherits(var_value, "ReactiveProxy") && !is.null(var_value$node_id)) {
+                      # Register this reactive by its variable name
+                      if (!is.null(new_builder$reactive_context)) {
+                        if (!exists("reactive_sources", envir = new_builder$reactive_context)) {
+                          assign("reactive_sources", new.env(parent = emptyenv()), envir = new_builder$reactive_context)
+                        }
+                        reactive_sources <- get("reactive_sources", envir = new_builder$reactive_context)
+                        # Only register if not already registered (avoid duplicates)
+                        if (!exists(var_name, envir = reactive_sources, inherits = FALSE)) {
+                          assign(var_name, var_value$node_id, envir = reactive_sources)
+                          message("[HotReload] Registered reactive source: ", var_name, " -> ", var_value$node_id)
+                        }
+                      }
+                    }
+                  },
+                  error = function(e) {
+                    # Ignore errors when accessing variables
+                  }
+                )
+              }
+            },
+            error = function(e) {
+              # Ignore errors when scanning environments
+            }
+          )
+        }
+        
+        # CRITICAL: Manually trigger set_output_name for any pending RenderProxies (same as in runApp)
+        message("[HotReload] Triggering set_output_name for pending RenderProxies...")
+        if (is.environment(output)) {
+          output_names <- ls(envir = output, all.names = TRUE)
+          for (name in output_names) {
+            val <- get(name, envir = output)
+            if (inherits(val, "RenderProxy") && isTRUE(val$pending_output_name)) {
+              val$set_output_name(name)
+            }
+          }
+        } else if (is.list(output)) {
+          for (name in names(output)) {
+            val <- output[[name]]
+            if (inherits(val, "RenderProxy") && isTRUE(val$pending_output_name)) {
+              val$set_output_name(name)
+            }
+          }
+        }
+        
+        # CRITICAL: Re-extract dependencies after server execution (same as in runApp)
+        # This ensures reactive sources are registered before dependency extraction
+        message("[HotReload] Re-extracting dependencies...")
+        graph <- new_builder$get_graph()
+        all_nodes <- graph$get_all_nodes()
+        
+        # Load helper functions
+        ns <- asNamespace("hotShiny")
+        base_path <- getwd()
+        if (!file.exists(file.path(base_path, "R"))) {
+          base_path <- system.file(package = "hotShiny")
+        }
+        load_env <- new.env(parent = ns)
+        dep_file <- file.path(base_path, "R/ir/dependency-tracker.R")
+        if (file.exists(dep_file)) {
+          sys.source(dep_file, envir = load_env)
+        }
+        extract_deps_fn <- if (exists("extract_dependencies", envir = load_env)) {
+          get("extract_dependencies", envir = load_env)
+        } else if (exists("extract_dependencies", envir = ns)) {
+          get("extract_dependencies", envir = ns)
+        } else {
+          stop("extract_dependencies function not found")
+        }
+        
+        serializer_file <- file.path(base_path, "R/ir/serializer.R")
+        if (file.exists(serializer_file)) {
+          sys.source(serializer_file, envir = load_env)
+        }
+        ast_to_expr_fn <- if (exists("ast_to_expr", envir = load_env)) {
+          get("ast_to_expr", envir = load_env)
+        } else if (exists("ast_to_expr", envir = ns)) {
+          get("ast_to_expr", envir = ns)
+        } else {
+          stop("ast_to_expr function not found")
+        }
+        
+        # Re-extract dependencies for render nodes
+        for (node in all_nodes) {
+          if (inherits(node, "RenderNode") && !is.null(node$expr)) {
+            expr <- ast_to_expr_fn(node$expr)
+            new_deps <- extract_deps_fn(expr)
+            node$deps <- new_deps
+            # Rebuild edges
+            graph$edges <- Filter(function(e) e$to != node$id, graph$edges)
+            for (dep_id in new_deps) {
+              graph$edges <- c(graph$edges, list(list(from = dep_id, to = node$id)))
+            }
+          }
+        }
+        
         # Update app
         new_graph <- new_builder$get_graph()
         self$app$builder <- new_builder
         self$app$executor$graph <- new_graph
         self$app$executor$builder <- new_builder
+        
+        # CRITICAL: Execute all nodes to compute new values after reload
+        message("[HotReload] Executing nodes to compute new values...")
+        self$app$executor$execute()
+        
+        # CRITICAL: Send updated output values to clients
+        message("[HotReload] Sending output updates to clients...")
+        self$app$executor$send_output_updates()
         
         message("[HotReload] Complete! Nodes: ", length(new_graph$get_all_nodes()))
         list(status = "success", nodes = length(new_graph$get_all_nodes()))

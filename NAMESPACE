@@ -1,6 +1,7 @@
 # Export user-facing functions
 export(
   app,
+  runApp,
   enable_hot_reload,
   enable_strict_mode,
   disable_strict_mode,
