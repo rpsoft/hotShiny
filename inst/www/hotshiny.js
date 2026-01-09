@@ -90,9 +90,10 @@
         }
         input.setAttribute('data-hotshiny-listener', 'true');
 
-        // Send initial value if it exists
+        // Send initial value ONLY on first page load (not after hot reload)
+        // Check if this is the initial page load by looking for a flag
         const initialValue = input.value || '';
-        if (initialValue !== '') {
+        if (initialValue !== '' && !this.initialValuesSent) {
           console.log(`[hotShiny] Sending initial value for ${inputId}: ${initialValue}`);
           // Use a small delay to ensure WebSocket is connected
           setTimeout(() => {
@@ -100,18 +101,34 @@
           }, 100);
         }
 
+        // Track the last sent value to avoid redundant sends
+        input.setAttribute('data-hotshiny-last-value', initialValue);
+
         // Attach input event (fires on every keystroke)
         input.addEventListener('input', (e) => {
           const value = e.target.value || '';
-          this.sendInput(inputId, value);
+          const lastValue = input.getAttribute('data-hotshiny-last-value') || '';
+          // Only send if value actually changed
+          if (value !== lastValue) {
+            input.setAttribute('data-hotshiny-last-value', value);
+            this.sendInput(inputId, value);
+          }
         });
 
         // Also attach change event (fires on blur/enter)
         input.addEventListener('change', (e) => {
           const value = e.target.value || '';
-          this.sendInput(inputId, value);
+          const lastValue = input.getAttribute('data-hotshiny-last-value') || '';
+          // Only send if value actually changed
+          if (value !== lastValue) {
+            input.setAttribute('data-hotshiny-last-value', value);
+            this.sendInput(inputId, value);
+          }
         });
       });
+      
+      // Mark that initial values have been sent (for first page load)
+      this.initialValuesSent = true;
     }
 
     registerMessageHandlers() {
@@ -215,11 +232,45 @@
       // Notify before reload
       this.notifyHotReload(reloadData);
 
-      // Reload the page to get the updated UI
-      // Use a small delay to ensure the notification is processed
+      // DO NOT reload the page - this would reset input values to defaults!
+      // The server has already:
+      // 1. Re-executed the server function with preserved input values
+      // 2. Sent output value updates via WebSocket
+      // So we just need to let those updates be applied to the DOM
+      
+      // If the UI structure changed significantly, we may need to fetch new HTML
+      // But for now, just log and let value updates handle it
+      console.log('[hotShiny] Hot reload complete - output values will be updated via WebSocket');
+      
+      // Show a brief notification to the user
+      this.showHotReloadNotification();
+    }
+
+    showHotReloadNotification() {
+      // Create a temporary notification element
+      const notification = document.createElement('div');
+      notification.style.cssText = `
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        background: #28a745;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 5px;
+        z-index: 10000;
+        font-family: sans-serif;
+        font-size: 14px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        transition: opacity 0.3s ease;
+      `;
+      notification.textContent = '✓ Hot reload applied';
+      document.body.appendChild(notification);
+      
+      // Remove after 2 seconds
       setTimeout(() => {
-        window.location.reload();
-      }, 100);
+        notification.style.opacity = '0';
+        setTimeout(() => notification.remove(), 300);
+      }, 2000);
     }
 
     updateNode(nodeId) {
