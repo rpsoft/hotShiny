@@ -53,6 +53,16 @@ server <- function(input, output, session) {
 app_obj <- app(ui, server)
 
 # Enable features
-# enable_hot_reload(app_obj)
+#enable_hot_reload(app_obj)
 # enable_strict_mode(app_obj)
 # enable_time_travel(app_obj)
+
+
+# Enable hot reload (in development)
+enable_hot_reload(app_obj)
+
+# Run app
+# The server will start and be accessible at http://localhost:3838
+# Press ESC or Ctrl+C to stop the server
+app_obj$runApp(port = 3838)
+

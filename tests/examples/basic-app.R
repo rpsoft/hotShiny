@@ -5,7 +5,7 @@ library(hotShiny)
 
 ui <- function() {
   div(
-    h1("Basic HotShiny Appssss"),
+    h1("Basic HotShiny Appss"),
     textInput("name", "Enter your name:"),
     textOutput("greeting")
   )
