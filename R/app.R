@@ -854,8 +854,23 @@ HotShinyApp <- R6::R6Class("HotShinyApp",
                   attrs <- first_arg
                   children <- if (length(args) > 1) args[-1] else list()
                 } else {
-                  # All args are children (tags or text)
-                  children <- args
+                  # Separate named arguments (attributes) from unnamed arguments (children)
+                  arg_names <- names(args)
+                  if (!is.null(arg_names)) {
+                    # Extract named arguments as attributes
+                    named_indices <- which(arg_names != "")
+                    if (length(named_indices) > 0) {
+                      attrs <- args[named_indices]
+                    }
+                    # Extract unnamed arguments as children
+                    unnamed_indices <- which(arg_names == "" | is.null(arg_names))
+                    if (length(unnamed_indices) > 0) {
+                      children <- args[unnamed_indices]
+                    }
+                  } else {
+                    # All args are children (tags or text)
+                    children <- args
+                  }
                 }
               }
 
@@ -863,8 +878,30 @@ HotShinyApp <- R6::R6Class("HotShinyApp",
             }
             ui_env$h1 <- function(...) {
               args <- list(...)
+              attrs <- list()
+              children <- list()
+              
+              # Separate named arguments (attributes) from unnamed arguments (children)
+              arg_names <- names(args)
+              if (!is.null(arg_names) && length(args) > 0) {
+                # Extract named arguments as attributes
+                named_indices <- which(arg_names != "")
+                if (length(named_indices) > 0) {
+                  attrs <- args[named_indices]
+                }
+                # Extract unnamed arguments as children
+                unnamed_indices <- which(arg_names == "" | is.null(arg_names))
+                if (length(unnamed_indices) > 0) {
+                  children_args <- args[unnamed_indices]
+                } else {
+                  children_args <- list()
+                }
+              } else {
+                children_args <- args
+              }
+              
               # Convert text arguments to character, but preserve tag objects
-              children <- lapply(args, function(x) {
+              children <- lapply(children_args, function(x) {
                 if (is.character(x)) {
                   x
                 } else if (is.list(x) && "name" %in% names(x)) {
@@ -874,7 +911,7 @@ HotShinyApp <- R6::R6Class("HotShinyApp",
                   as.character(x)
                 }
               })
-              list(name = "h1", attribs = list(), children = children)
+              list(name = "h1", attribs = attrs, children = children)
             }
             ui_env$textInput <- function(inputId, label, value = "") {
               list(
