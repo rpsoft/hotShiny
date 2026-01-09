@@ -668,11 +668,28 @@ HotReloadEngine <- R6::R6Class("HotReloadEngine",
           stop("ast_to_expr function not found")
         }
         
-        # Re-extract dependencies for render nodes
+        # CRITICAL: Re-extract dependencies for BOTH ReactiveExprNodes AND RenderNodes
+        # ReactiveExprNodes may depend on other reactive expressions (e.g., combined depends on sum_value)
         for (node in all_nodes) {
+          # Handle ReactiveExprNode (reactive expressions that may depend on other reactives)
+          if (inherits(node, "ReactiveExprNode") && !is.null(node$expr)) {
+            expr <- ast_to_expr_fn(node$expr)
+            cat("[HotReload] Re-extracting deps for ReactiveExprNode", node$id, "\n", file = stderr())
+            cat("[HotReload]   expr:", paste(deparse(expr), collapse = " "), "\n", file = stderr())
+            new_deps <- extract_deps_fn(expr)
+            cat("[HotReload]   old deps:", if (length(node$deps) == 0) "NONE" else paste(node$deps, collapse = ", "), "\n", file = stderr())
+            cat("[HotReload]   new deps:", if (length(new_deps) == 0) "NONE" else paste(new_deps, collapse = ", "), "\n", file = stderr())
+            node$deps <- new_deps
+            # Rebuild edges
+            graph$edges <- Filter(function(e) e$to != node$id, graph$edges)
+            for (dep_id in new_deps) {
+              graph$edges <- c(graph$edges, list(list(from = dep_id, to = node$id)))
+            }
+          }
+          # Handle RenderNode (render expressions)
           if (inherits(node, "RenderNode") && !is.null(node$expr)) {
             expr <- ast_to_expr_fn(node$expr)
-            cat("[HotReload] Re-extracting deps for", node$id, "output_name=", node$output_name, "\n", file = stderr())
+            cat("[HotReload] Re-extracting deps for RenderNode", node$id, "output_name=", node$output_name, "\n", file = stderr())
             cat("[HotReload]   expr:", paste(deparse(expr), collapse = " "), "\n", file = stderr())
             new_deps <- extract_deps_fn(expr)
             cat("[HotReload]   old deps:", if (length(node$deps) == 0) "NONE" else paste(node$deps, collapse = ", "), "\n", file = stderr())

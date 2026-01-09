@@ -595,9 +595,30 @@ HotShinyApp <- R6::R6Class("HotShinyApp",
           cat("[App] Re-extraction: Found", length(all_nodes), "nodes total\n", file = stderr())
           reactive_count <- sum(sapply(all_nodes, function(n) inherits(n, "ReactiveExprNode")))
           cat("[App] Re-extraction: Found", reactive_count, "reactive nodes\n", file = stderr())
+          
+          # CRITICAL: Re-extract dependencies for BOTH ReactiveExprNodes AND RenderNodes
+          # ReactiveExprNodes may depend on other reactive expressions (e.g., combined depends on sum_value)
+          # These dependencies can only be resolved after all reactives are registered in reactive_sources
           for (node in all_nodes) {
+            # Handle ReactiveExprNode (reactive expressions that may depend on other reactives)
+            if (inherits(node, "ReactiveExprNode") && !is.null(node$expr)) {
+              cat("[App] Re-extracting for ReactiveExprNode", node$id, ", current deps:", if (length(node$deps) == 0) "NONE" else paste(node$deps, collapse = ", "), "\n", file = stderr())
+              expr <- ast_to_expr_fn(node$expr)
+              cat("[App] Reconstructed expr:", paste(deparse(expr), collapse = " "), "\n", file = stderr())
+              new_deps <- extract_deps_fn(expr)
+              cat("[App] Extracted deps:", if (length(new_deps) == 0) "NONE" else paste(new_deps, collapse = ", "), "\n", file = stderr())
+              # Update node dependencies
+              node$deps <- new_deps
+              # Rebuild edges for this node
+              graph$edges <- Filter(function(e) e$to != node$id, graph$edges)
+              for (dep_id in new_deps) {
+                graph$edges <- c(graph$edges, list(list(from = dep_id, to = node$id)))
+              }
+              cat("[App] Updated ReactiveExprNode", node$id, "deps to:", paste(node$deps, collapse = ", "), "\n", file = stderr())
+            }
+            # Handle RenderNode (render expressions)
             if (inherits(node, "RenderNode") && !is.null(node$expr)) {
-              cat("[App] Re-extracting for", node$id, ", current deps:", if (length(node$deps) == 0) "NONE" else paste(node$deps, collapse = ", "), "\n", file = stderr())
+              cat("[App] Re-extracting for RenderNode", node$id, ", current deps:", if (length(node$deps) == 0) "NONE" else paste(node$deps, collapse = ", "), "\n", file = stderr())
               cat("[App] AST structure:", str(node$expr), "\n", file = stderr())
               # Re-extract dependencies now that reactive sources are registered
               expr <- ast_to_expr_fn(node$expr)
@@ -614,7 +635,7 @@ HotShinyApp <- R6::R6Class("HotShinyApp",
               for (dep_id in new_deps) {
                 graph$edges <- c(graph$edges, list(list(from = dep_id, to = node$id)))
               }
-              cat("[App] Updated", node$id, "deps to:", paste(node$deps, collapse = ", "), "\n", file = stderr())
+              cat("[App] Updated RenderNode", node$id, "deps to:", paste(node$deps, collapse = ", "), "\n", file = stderr())
             }
           }
 

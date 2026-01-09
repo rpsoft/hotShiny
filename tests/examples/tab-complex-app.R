@@ -15,9 +15,8 @@ ui <- function() {
           div("middle"),
           textOutput("sum"),
           textOutput("product"),
-          plotOutput("plot"),
-          width = 8
-          ),
+          plotOutput("plot")
+        ),
         position = c("left", "right"),
         fluid = TRUE
       ),
@@ -41,7 +40,7 @@ server <- function(input, output, session) {
   
   # Dependent reactive
   combined <- reactive({
-    paste("Sum:", sum_value(), "Product ", product_value())
+    paste("Sum:", sum_value(), "Product ", product_value(), "Subtract ", sum_value() - product_value())
   })
   
   # Render outputs
@@ -55,7 +54,7 @@ server <- function(input, output, session) {
   
   output$plot <- renderPlot({
     # Simple plot
-    plot(1:20, main = combined())
+    plot(1:10, main = combined())
   })
   
   # Observer
