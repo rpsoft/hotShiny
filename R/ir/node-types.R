@@ -161,7 +161,7 @@ RenderNode <- R6::R6Class("RenderNode",
     render_type = NULL,
     output_name = NULL,
     initialize = function(id, render_type, output_name, deps = list(),
-                          expr = NULL, version = 1L, source = NULL, env = NULL) {
+                          expr = NULL, version = 1L, source = NULL, env = NULL, outputArgs = NULL) {
       super$initialize(
         id = id,
         type = "render",
@@ -175,6 +175,9 @@ RenderNode <- R6::R6Class("RenderNode",
       self$output_name <- output_name
       self$metadata$render_type <- render_type
       self$metadata$output_name <- output_name
+      if (!is.null(outputArgs)) {
+        self$metadata$outputArgs <- outputArgs
+      }
     }
   )
 )

@@ -56,23 +56,15 @@ WebSocketServer <- R6::R6Class("WebSocketServer",
       self$send_graph_update(ws)
       
       # Send initial values for all output nodes
+      # First trigger execution to compute all values, then send updates
       executor <- self$app$get_executor()
       if (!is.null(executor)) {
-        graph <- executor$graph
-        all_nodes <- graph$get_all_nodes()
-        for (node in all_nodes) {
-          if (inherits(node, "RenderNode") || (is.list(node) && !is.null(node$output_name))) {
-            node_id <- if (inherits(node, "ReactiveNode")) node$id else node$id
-            output_name <- if (inherits(node, "RenderNode")) node$output_name else node$output_name
-            if (is.null(output_name) && !is.null(node$metadata) && !is.null(node$metadata$output_name)) {
-              output_name <- node$metadata$output_name
-            }
-            value <- executor$get_value(node_id)
-            if (!is.null(value)) {
-              self$send_value_update(node_id, value, output_name)
-            }
-          }
-        }
+        # Execute all nodes to compute initial values
+        cat("[WebSocket] on_open: Executing all nodes for initial values\n", file = stderr())
+        executor$execute()
+        cat("[WebSocket] on_open: Execution complete, sending output updates\n", file = stderr())
+        # Use send_output_updates which properly finds all render nodes
+        executor$send_output_updates()
       }
       
       connection_id

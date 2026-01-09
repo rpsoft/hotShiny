@@ -151,6 +151,16 @@ ReactiveExecutor <- R6::R6Class("ReactiveExecutor",
         }
       }
 
+      # CRITICAL: For render nodes, execute if they have no value yet (initial execution)
+      # This ensures plots and other outputs are rendered on first load
+      if (inherits(node, "RenderNode")) {
+        current_value <- self$state_manager$get_value(node$id)
+        if (is.null(current_value) || (is.character(current_value) && trimws(current_value) == "")) {
+          cat("[Executor] should_execute: node", node$id, "is RenderNode with no value, executing for initial render\n", file = stderr())
+          return(TRUE)
+        }
+      }
+
       cat("[Executor] should_execute: node", node$id, "does NOT need execution\n", file = stderr())
       return(FALSE)
 
@@ -491,6 +501,18 @@ ReactiveExecutor <- R6::R6Class("ReactiveExecutor",
 
     # Execute a render function
     execute_render = function(node) {
+      # Debug: Check if node has render_type field
+      render_type_val <- tryCatch(node$render_type, error = function(e) {
+        cat("[Executor] execute_render: ERROR accessing node$render_type:", conditionMessage(e), "\n", file = stderr())
+        NULL
+      })
+      cat("[Executor] execute_render: Starting render for node", node$id, "render_type=", if (is.null(render_type_val)) "NULL" else render_type_val, "\n", file = stderr())
+      cat("[Executor] execute_render: Node class:", class(node)[1], "\n", file = stderr())
+      if (inherits(node, "RenderNode")) {
+        cat("[Executor] execute_render: Node IS a RenderNode\n", file = stderr())
+      } else {
+        cat("[Executor] execute_render: Node is NOT a RenderNode, class:", paste(class(node), collapse = ", "), "\n", file = stderr())
+      }
       if (is.null(node$expr)) {
         cat("[Executor] execute_render: node", node$id, "has no expr\n", file = stderr())
         return(NULL)
@@ -499,6 +521,7 @@ ReactiveExecutor <- R6::R6Class("ReactiveExecutor",
       # Reconstruct expression
       ast_to_expr_fn <- self$get_helper_function("ast_to_expr")
       expr <- ast_to_expr_fn(node$expr)
+      cat("[Executor] execute_render: Reconstructed expression for node", node$id, "\n", file = stderr())
 
       # Get dependency values
       # Separate input dependencies from reactive dependencies
@@ -671,48 +694,202 @@ ReactiveExecutor <- R6::R6Class("ReactiveExecutor",
 
       cat("[Executor] execute_render: evaluating expr:", paste(deparse(expr), collapse = " "), "\n", file = stderr())
       cat("[Executor] execute_render: available functions in eval_env:", paste(ls(envir = eval_env), collapse = ", "), "\n", file = stderr())
-      # Evaluate expression with error handling
-      result <- tryCatch(
-        {
+      
+      # Get render_type from node or metadata
+      render_type <- node$render_type
+      if (is.null(render_type) && !is.null(node$metadata) && !is.null(node$metadata$render_type)) {
+        render_type <- node$metadata$render_type
+        cat("[Executor] execute_render: Got render_type from metadata: '", render_type, "'\n", file = stderr())
+      }
+      cat("[Executor] execute_render: node render_type = '", render_type, "' (class: ", class(render_type), ")\n", file = stderr())
+      
+      # For plot types, we need to capture the plot directly, so handle separately
+      if (!is.null(render_type) && render_type == "plot") {
+        cat("[Executor] execute_render: Processing plot render for node", node$id, "\n", file = stderr())
+        # Capture plot as PNG and convert to base64
+        temp_file <- tempfile(fileext = ".png")
+        result <- tryCatch({
+          # Get width and height from outputArgs if available
+          width <- 400
+          height <- 400
+          if (!is.null(node$metadata) && !is.null(node$metadata$outputArgs)) {
+            cat("[Executor] execute_render: Found outputArgs in metadata\n", file = stderr())
+            if (!is.null(node$metadata$outputArgs$width) && node$metadata$outputArgs$width != "auto") {
+              width <- as.numeric(gsub("px", "", as.character(node$metadata$outputArgs$width)))
+            }
+            if (!is.null(node$metadata$outputArgs$height) && node$metadata$outputArgs$height != "auto") {
+              height <- as.numeric(gsub("px", "", as.character(node$metadata$outputArgs$height)))
+            }
+          }
+          cat("[Executor] execute_render: Plot dimensions:", width, "x", height, "\n", file = stderr())
+          
+          # Close any existing graphics devices (except null device)
+          while (dev.cur() > 1) {
+            dev.off()
+          }
+          
+          # Open PNG device
+          cat("[Executor] execute_render: Opening PNG device:", temp_file, "\n", file = stderr())
+          png(temp_file, width = width, height = height, units = "px", res = 72)
+          # Evaluate the expression to generate the plot
+          cat("[Executor] execute_render: Evaluating plot expression\n", file = stderr())
           eval(expr, envir = eval_env)
-        },
-        error = function(e) {
-          # Catch all errors and return empty string
-          # This prevents errors from propagating to the client
-          error_msg <- conditionMessage(e)
-          cat("[Executor] execute_render: ERROR evaluating:", error_msg, "\n", file = stderr())
-
-          # Log warning for debugging, but don't send to client
-          if (grepl("object.*input", error_msg, ignore.case = TRUE)) {
-            # Input-related error - return empty string silently
-            return("")
+          dev.off()
+          cat("[Executor] execute_render: PNG device closed\n", file = stderr())
+          
+          # Read the file and convert to base64
+          if (file.exists(temp_file)) {
+            file_size <- file.info(temp_file)$size
+            cat("[Executor] execute_render: Plot file exists, size:", file_size, "bytes\n", file = stderr())
+            if (file_size > 0) {
+              plot_bytes <- readBin(temp_file, "raw", file_size)
+              # Use base64enc if available
+              if (requireNamespace("base64enc", quietly = TRUE)) {
+                base64_plot <- base64enc::base64encode(plot_bytes)
+                result_str <- paste0("data:image/png;base64,", base64_plot)
+                cat("[Executor] execute_render: Plot encoded, base64 length:", nchar(base64_plot), "\n", file = stderr())
+                result_str
+              } else {
+                error_msg <- "base64enc package not available, cannot encode plot. Install with: install.packages('base64enc')"
+                cat("[Executor] execute_render:", error_msg, "\n", file = stderr())
+                warning(error_msg)
+                # Return error message so client can see what's wrong
+                paste0("ERROR: ", error_msg)
+              }
+            } else {
+              error_msg <- "plot file is empty"
+              cat("[Executor] execute_render:", error_msg, "\n", file = stderr())
+              paste0("ERROR: ", error_msg)
+            }
           } else {
-            # Other errors - log but still return empty string
-            warning("Error evaluating render expression: ", error_msg)
-            return("")
+            error_msg <- "plot file does not exist after dev.off()"
+            cat("[Executor] execute_render:", error_msg, "\n", file = stderr())
+            paste0("ERROR: ", error_msg)
+          }
+        }, error = function(e) {
+          error_msg <- conditionMessage(e)
+          cat("[Executor] execute_render: ERROR capturing plot:", error_msg, "\n", file = stderr())
+          cat("[Executor] execute_render: Error class:", class(e)[1], "\n", file = stderr())
+          # Print traceback
+          tryCatch({
+            tb <- capture.output(traceback())
+            cat("[Executor] execute_render: Error traceback:\n", paste(tb, collapse = "\n"), "\n", file = stderr())
+          }, error = function(e2) {
+            cat("[Executor] execute_render: Could not capture traceback\n", file = stderr())
+          })
+          # Make sure device is closed even on error
+          if (dev.cur() > 1) {
+            tryCatch({
+              dev.off()
+              cat("[Executor] execute_render: Closed graphics device after error\n", file = stderr())
+            }, error = function(e2) {
+              cat("[Executor] execute_render: Error closing device:", conditionMessage(e2), "\n", file = stderr())
+            })
+          }
+          # Return error message as value so we can see what went wrong
+          paste0("ERROR: ", error_msg)
+        }, finally = {
+          # Clean up temp file
+          if (file.exists(temp_file)) {
+            unlink(temp_file)
+          }
+        })
+        formatted <- result
+        cat("[Executor] execute_render: Plot result length:", if (is.character(formatted)) nchar(formatted) else "non-character", "\n", file = stderr())
+        cat("[Executor] execute_render: Plot result preview:", if (is.character(formatted) && nchar(formatted) > 0) substr(formatted, 1, 100) else "EMPTY", "\n", file = stderr())
+      } else {
+        cat("[Executor] execute_render: Not a plot render (type='", render_type, "'), using normal evaluation path\n", file = stderr())
+        # For non-plot types, evaluate normally
+        result <- tryCatch(
+          {
+            eval_result <- eval(expr, envir = eval_env)
+            # Check if result is NULL - this happens with plot() which returns NULL invisibly
+            # If we get NULL and the expression contains plot(), we should treat it as a plot
+            if (is.null(eval_result)) {
+              expr_str <- paste(deparse(expr), collapse = " ")
+              if (grepl("\\bplot\\s*\\(", expr_str)) {
+                cat("[Executor] execute_render: WARNING - plot() expression returned NULL, but render_type is not 'plot'!\n", file = stderr())
+                cat("[Executor] execute_render: Expression:", expr_str, "\n", file = stderr())
+                cat("[Executor] execute_render: This suggests the node was not registered with render_type='plot'\n", file = stderr())
+              }
+            }
+            eval_result
+          },
+          error = function(e) {
+            # Catch all errors and return empty string
+            # This prevents errors from propagating to the client
+            error_msg <- conditionMessage(e)
+            cat("[Executor] execute_render: ERROR evaluating:", error_msg, "\n", file = stderr())
+
+            # Log warning for debugging, but don't send to client
+            if (grepl("object.*input", error_msg, ignore.case = TRUE)) {
+              # Input-related error - return empty string silently
+              return("")
+            } else {
+              # Other errors - log but still return empty string
+              warning("Error evaluating render expression: ", error_msg)
+              return("")
+            }
+          }
+        )
+
+        # Check if result is NULL - this happens with plot() which returns NULL invisibly
+        # If we get NULL and the expression contains plot(), treat it as a plot
+        if (is.null(result)) {
+          expr_str <- paste(deparse(expr), collapse = " ")
+          if (grepl("\\bplot\\s*\\(", expr_str)) {
+            cat("[Executor] execute_render: Detected plot() call returning NULL, treating as plot render\n", file = stderr())
+            # Re-run as plot render
+            temp_file <- tempfile(fileext = ".png")
+            plot_result <- tryCatch({
+              width <- 400
+              height <- 400
+              if (!is.null(node$metadata) && !is.null(node$metadata$outputArgs)) {
+                if (!is.null(node$metadata$outputArgs$width) && node$metadata$outputArgs$width != "auto") {
+                  width <- as.numeric(gsub("px", "", as.character(node$metadata$outputArgs$width)))
+                }
+                if (!is.null(node$metadata$outputArgs$height) && node$metadata$outputArgs$height != "auto") {
+                  height <- as.numeric(gsub("px", "", as.character(node$metadata$outputArgs$height)))
+                }
+              }
+              while (dev.cur() > 1) dev.off()
+              png(temp_file, width = width, height = height, units = "px", res = 72)
+              eval(expr, envir = eval_env)
+              dev.off()
+              if (file.exists(temp_file) && file.info(temp_file)$size > 0) {
+                plot_bytes <- readBin(temp_file, "raw", file.info(temp_file)$size)
+                if (requireNamespace("base64enc", quietly = TRUE)) {
+                  base64_plot <- base64enc::base64encode(plot_bytes)
+                  paste0("data:image/png;base64,", base64_plot)
+                } else {
+                  paste0("ERROR: base64enc package not available")
+                }
+              } else {
+                paste0("ERROR: plot file not created")
+              }
+            }, error = function(e) {
+              if (dev.cur() > 1) tryCatch(dev.off(), error = function(e) NULL)
+              paste0("ERROR: ", conditionMessage(e))
+            }, finally = {
+              if (file.exists(temp_file)) unlink(temp_file)
+            })
+            result <- plot_result
+          } else {
+            result <- ""
           }
         }
-      )
 
-      # Ensure result is not NULL
-      if (is.null(result)) {
-        result <- ""
+        cat("[Executor] execute_render: result='", if (is.character(result) && nchar(result) > 100) paste0(substr(result, 1, 100), "...") else result, "' (length:", if (is.character(result)) nchar(result) else length(result), ")\n", file = stderr())
+
+        # Format based on render type (use render_type variable we got earlier)
+        formatted <- switch(render_type,
+          "text" = as.character(result),
+          "table" = result,
+          "datatable" = result,
+          "ui" = result,
+          result
+        )
       }
-
-      cat("[Executor] execute_render: result='", result, "'\n", file = stderr())
-
-      # Store result
-      self$state_manager$set_value(node$id, result)
-
-      # Format based on render type
-      formatted <- switch(node$render_type,
-        "text" = as.character(result),
-        "plot" = result, # Would need to convert to base64 or similar
-        "table" = result,
-        "datatable" = result,
-        "ui" = result,
-        result
-      )
 
       # Store formatted result
       self$state_manager$set_value(node$id, formatted)
@@ -954,7 +1131,13 @@ ReactiveExecutor <- R6::R6Class("ReactiveExecutor",
 
           # Get value - this will execute the node if needed
           value <- self$get_value(node_id)
-          cat("[Executor] send_output_updates: node", node_id, "value='", value, "'\n", file = stderr())
+          # For plot outputs, value might be a very long base64 string
+          value_preview <- if (is.character(value) && nchar(value) > 100) {
+            paste0(substr(value, 1, 100), "... [truncated, length=", nchar(value), "]")
+          } else {
+            value
+          }
+          cat("[Executor] send_output_updates: node", node_id, "value='", value_preview, "'\n", file = stderr())
 
           # Always send value updates, even if empty (so client can clear/update UI)
           # Convert NULL to empty string
@@ -968,7 +1151,12 @@ ReactiveExecutor <- R6::R6Class("ReactiveExecutor",
             output_name = output_name,
             value = value
           )
-          cat("[Executor] send_output_updates: sending update for", output_name, "with value='", value, "' to", length(ws_server$connections), "connections\n", file = stderr())
+          value_preview2 <- if (is.character(value) && nchar(value) > 100) {
+            paste0(substr(value, 1, 100), "... [truncated, length=", nchar(value), "]")
+          } else {
+            value
+          }
+          cat("[Executor] send_output_updates: sending update for", output_name, "with value='", value_preview2, "' to", length(ws_server$connections), "connections\n", file = stderr())
           # Send to all connections
           sent_count <- 0
           for (conn_id in names(ws_server$connections)) {

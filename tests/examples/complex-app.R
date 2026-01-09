@@ -5,12 +5,16 @@ library(hotShiny)
 
 ui <- function() {
   div(
-    h1("Complex HotShiny App"),
+    h1("Complex HotShiny Appss"),
     numericInput("a", "Value A:", value = 1),
     numericInput("b", "Value B:", value = 2),
     textOutput("sum"),
     textOutput("product"),
-    plotOutput("plot")
+    plotOutput("plot"),
+    div(
+      "hello",
+      style = "background-color:blue;"
+    )
   )
 }
 

@@ -283,7 +283,7 @@ GraphBuilder <- R6::R6Class("GraphBuilder",
     },
 
     # Register a render function
-    register_render = function(render_type, output_name, expr, deps = NULL, source = NULL, env = NULL) {
+    register_render = function(render_type, output_name, expr, deps = NULL, source = NULL, env = NULL, outputArgs = NULL) {
       if (is.null(deps)) {
         deps <- extract_dependencies(expr)
       }
@@ -298,7 +298,8 @@ GraphBuilder <- R6::R6Class("GraphBuilder",
         deps = deps,
         expr = expr_ast,
         source = source,
-        env = env
+        env = env,
+        outputArgs = outputArgs
       )
 
       self$graph$add_node(node)

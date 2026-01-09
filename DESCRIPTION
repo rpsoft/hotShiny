@@ -19,5 +19,6 @@ Imports:
     digest (>= 0.6.0)
 Suggests:
     testthat (>= 3.0.0),
-    shinytest2 (>= 0.1.0)
+    shinytest2 (>= 0.1.0),
+    base64enc (>= 0.1.0)
 RoxygenNote: 7.2.0

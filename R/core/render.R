@@ -147,6 +147,10 @@ render_impl <- function(render_type, expr, env, quoted, outputArgs, output_name 
     proxy$pending_deps <- deps
     proxy$pending_source <- source
     proxy$pending_env <- env # Store environment
+    # Store outputArgs if provided
+    if (!is.null(outputArgs) && length(outputArgs) > 0) {
+      proxy$pending_outputArgs <- outputArgs
+    }
     return(proxy)
   }
 
@@ -157,7 +161,8 @@ render_impl <- function(render_type, expr, env, quoted, outputArgs, output_name 
     expr = expr_ast,
     deps = deps,
     source = source,
-    env = env
+    env = env,
+    outputArgs = outputArgs
   )
 
   # Return render proxy
@@ -181,6 +186,7 @@ RenderProxy <- R6::R6Class("RenderProxy",
     pending_deps = NULL,
     pending_source = NULL,
     pending_env = NULL,
+    pending_outputArgs = NULL,
     initialize = function(node_id, render_type, builder) {
       self$node_id <- node_id
       self$render_type <- render_type
@@ -191,6 +197,7 @@ RenderProxy <- R6::R6Class("RenderProxy",
       self$pending_deps <- NULL
       self$pending_source <- NULL
       self$pending_env <- NULL
+      self$pending_outputArgs <- NULL
 
       # If builder is NULL, try to get it from context
       if (is.null(self$builder)) {
@@ -225,13 +232,16 @@ RenderProxy <- R6::R6Class("RenderProxy",
         # Register the render node now that we have the output name
         tryCatch(
           {
+            # Get outputArgs if they were stored in the proxy
+            outputArgs <- self$pending_outputArgs
             node <- self$builder$register_render(
               render_type = self$render_type,
               output_name = name,
               expr = self$pending_expr,
               deps = self$pending_deps,
               source = self$pending_source,
-              env = self$pending_env
+              env = self$pending_env,
+              outputArgs = outputArgs
             )
             self$node_id <- node$id
             self$pending_output_name <- FALSE

@@ -90,6 +90,16 @@
         }
         input.setAttribute('data-hotshiny-listener', 'true');
 
+        // Send initial value if it exists
+        const initialValue = input.value || '';
+        if (initialValue !== '') {
+          console.log(`[hotShiny] Sending initial value for ${inputId}: ${initialValue}`);
+          // Use a small delay to ensure WebSocket is connected
+          setTimeout(() => {
+            this.sendInput(inputId, initialValue);
+          }, 100);
+        }
+
         // Attach input event (fires on every keystroke)
         input.addEventListener('input', (e) => {
           const value = e.target.value || '';
@@ -154,7 +164,16 @@
       const value = data.value;
       const outputName = data.outputName;
 
-      console.log(`[hotShiny] Value update received: nodeId=${nodeId}, outputName=${outputName}, value="${value}"`);
+      // For plot outputs, value might be a very long base64 string
+      const valuePreview = (typeof value === 'string' && value.length > 100) 
+        ? value.substring(0, 100) + `... [truncated, length=${value.length}]`
+        : value;
+      console.log(`[hotShiny] Value update received: nodeId=${nodeId}, outputName=${outputName}, value="${valuePreview}"`);
+      
+      // Check if this is a plot value
+      if (typeof value === 'string' && value.startsWith('data:image/')) {
+        console.log(`[hotShiny] Detected plot image data, length: ${value.length}`);
+      }
 
       // If we have an output_name, update that element directly
       if (outputName) {
@@ -221,17 +240,92 @@
         element = document.querySelector(`[data-output-id="${outputName}"]`);
       }
       if (!element) {
-        // Try class selector with ID
+        // Try class selector with ID (text output)
         element = document.querySelector(`.shiny-text-output#${outputName}`);
       }
       if (!element) {
-        // Try just class selector
+        // Try class selector with ID (plot output)
+        element = document.querySelector(`.shiny-plot-output#${outputName}`);
+      }
+      if (!element) {
+        // Try just class selector (text output)
         element = document.querySelector(`.shiny-text-output[id="${outputName}"]`);
+      }
+      if (!element) {
+        // Try just class selector (plot output)
+        element = document.querySelector(`.shiny-plot-output[id="${outputName}"]`);
       }
 
       if (element) {
         // Update element based on render type
         const stringValue = value !== null && value !== undefined ? String(value) : '';
+        
+        // Check if this is a plot output (has class shiny-plot-output)
+        if (element.classList.contains('shiny-plot-output')) {
+          console.log(`[hotShiny] Updating plot output element "${outputName}"`);
+          console.log(`[hotShiny] Element found:`, element);
+          console.log(`[hotShiny] Value type: ${typeof value}, length: ${stringValue.length}`);
+          
+          // For plot outputs, check if value is a base64 image
+          if (stringValue && stringValue.startsWith('data:image/')) {
+            console.log(`[hotShiny] Plot image data detected, length: ${stringValue.length}`);
+            console.log(`[hotShiny] Image data preview: ${stringValue.substring(0, 50)}...`);
+            
+            // Create or update img element
+            let img = element.querySelector('img');
+            if (!img) {
+              console.log(`[hotShiny] Creating new img element for plot`);
+              img = document.createElement('img');
+              img.style.maxWidth = '100%';
+              img.style.height = 'auto';
+              img.style.display = 'block';
+              element.appendChild(img);
+            }
+            
+            // Set the image source
+            console.log(`[hotShiny] Setting img.src (length: ${stringValue.length})`);
+            img.src = stringValue;
+            
+            img.onload = () => {
+              console.log(`[hotShiny] Plot image loaded successfully, dimensions: ${img.naturalWidth}x${img.naturalHeight}`);
+            };
+            img.onerror = (e) => {
+              console.error(`[hotShiny] Error loading plot image:`, e);
+              console.error(`[hotShiny] Image src length: ${img.src.length}`);
+              console.error(`[hotShiny] Image src preview: ${img.src.substring(0, 100)}`);
+            };
+            
+            console.log(`[hotShiny] Plot img element:`, img);
+            return true;
+          } else if (stringValue === '' || stringValue === 'null' || stringValue === 'undefined') {
+            // Clear the plot
+            console.log(`[hotShiny] Clearing plot output (empty value)`);
+            const img = element.querySelector('img');
+            if (img) {
+              img.remove();
+            }
+            // Show error message if value is empty
+            element.textContent = 'Plot not rendered (empty value from server)';
+            element.style.color = 'red';
+            element.style.padding = '10px';
+            return true;
+          } else if (stringValue.startsWith('ERROR:')) {
+            // Show error message from server
+            console.error(`[hotShiny] Plot rendering error:`, stringValue);
+            element.textContent = stringValue;
+            element.style.color = 'red';
+            element.style.padding = '10px';
+            return true;
+          } else {
+            console.warn(`[hotShiny] Plot output received non-image value:`, stringValue.substring(0, 200));
+            console.warn(`[hotShiny] Value starts with:`, stringValue.substring(0, 20));
+            element.textContent = `Plot error: ${stringValue.substring(0, 100)}`;
+            element.style.color = 'red';
+            element.style.padding = '10px';
+          }
+        }
+        
+        // For text outputs or other types
         if (element.tagName === 'DIV' || element.tagName === 'SPAN') {
           element.textContent = stringValue;
         } else {
