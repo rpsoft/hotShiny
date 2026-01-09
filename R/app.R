@@ -812,8 +812,15 @@ HotShinyApp <- R6::R6Class("HotShinyApp",
       httpuv::service(0)
 
       # Keep running until stopped
+      iter_count <- 0
       while (self$running) {
         httpuv::service(100)
+        # Process later callbacks (needed for hot reload file watcher)
+        later::run_now()
+        iter_count <- iter_count + 1
+        if (iter_count %% 100 == 0) {
+          cat("[EventLoop] Iteration", iter_count, "\n", file = stderr())
+        }
         Sys.sleep(0.01)
       }
 

@@ -398,18 +398,27 @@ HotReloadEngine <- R6::R6Class("HotReloadEngine",
           }
         }
         
-        # Set graph builder in execution environment
+        # Set graph builder in BOTH execution environment AND namespace
+        # This is CRITICAL: extract_dependencies looks up get_graph_builder() from the namespace
+        # If we only set it in exec_env, the namespace's context will be stale
         if (exists("set_graph_builder", envir = exec_env)) {
           get("set_graph_builder", envir = exec_env)(new_builder)
-        } else if (exists("set_graph_builder", envir = ns)) {
+        }
+        # ALWAYS set in namespace to ensure extract_dependencies finds the correct builder
+        if (exists("set_graph_builder", envir = ns)) {
           get("set_graph_builder", envir = ns)(new_builder)
+          cat("[HotReload] Set graph builder in namespace context\n", file = stderr())
         }
         
-        # Set executor in execution environment
+        # Set executor in BOTH execution environment AND namespace
+        # This ensures get_executor() returns the correct executor from any context
         if (exists("set_executor", envir = exec_env)) {
           get("set_executor", envir = exec_env)(self$app$executor)
-        } else if (exists("set_executor", envir = ns)) {
+        }
+        # ALWAYS set in namespace as well
+        if (exists("set_executor", envir = ns)) {
           get("set_executor", envir = ns)(self$app$executor)
+          cat("[HotReload] Set executor in namespace context\n", file = stderr())
         }
         
         # Get InputProxy and OutputProxy classes
@@ -436,6 +445,27 @@ HotReloadEngine <- R6::R6Class("HotReloadEngine",
               if (is.null(OutputProxyFn) && exists("OutputProxy", envir = load_env)) {
                 OutputProxyFn <- get("OutputProxy", envir = load_env)
               }
+            }
+          }
+        }
+        
+        # CRITICAL: Pre-register input nodes from old state BEFORE executing server
+        # This ensures input nodes exist when reactive expressions are created
+        message("[HotReload] Pre-registering input nodes from old state...")
+        cat("[HotReload] Pre-registering input nodes from old state\n", file = stderr())
+        state_manager <- self$app$state_manager
+        if (!is.null(state_manager)) {
+          old_values <- state_manager$serialize_state()
+          cat("[HotReload] Found", length(old_values), "values in old state_manager\n", file = stderr())
+          for (node_id in names(old_values)) {
+            if (grepl("^input\\.", node_id)) {
+              input_name <- sub("^input\\.", "", node_id)
+              value <- old_values[[node_id]]
+              cat("[HotReload] Pre-registering input:", input_name, "=", value, "\n", file = stderr())
+              # Register the input node in new builder
+              new_builder$register_input(input_name)
+              # Also set the value in state_manager so it's available during execution
+              state_manager$set_value(node_id, value)
             }
           }
         }
@@ -493,44 +523,59 @@ HotReloadEngine <- R6::R6Class("HotReloadEngine",
         
         # Scan environments captured in graph nodes
         graph_nodes <- new_builder$get_graph()$get_all_nodes()
+        cat("[HotReload] Found", length(graph_nodes), "graph nodes to scan for environments\n", file = stderr())
         for (node in graph_nodes) {
           if (!is.null(node$env) && is.environment(node$env)) {
             envs_to_scan <- c(envs_to_scan, list(node$env))
+            cat("[HotReload]   Node", node$id, "has environment\n", file = stderr())
+          } else {
+            cat("[HotReload]   Node", node$id, "has NO environment (env is NULL)\n", file = stderr())
           }
         }
         
+        cat("[HotReload] Scanning", length(envs_to_scan), "environments for ReactiveProxy objects\n", file = stderr())
+        
         # Scan all environments for ReactiveProxy objects
+        env_idx <- 0
         for (scan_env in envs_to_scan) {
+          env_idx <- env_idx + 1
           tryCatch(
             {
               env_vars <- ls(envir = scan_env, all.names = TRUE)
+              cat("[HotReload]   Env", env_idx, "has vars:", paste(env_vars, collapse = ", "), "\n", file = stderr())
               for (var_name in env_vars) {
                 tryCatch(
                   {
                     var_value <- get(var_name, envir = scan_env)
-                    if (inherits(var_value, "ReactiveProxy") && !is.null(var_value$node_id)) {
-                      # Register this reactive by its variable name
-                      if (!is.null(new_builder$reactive_context)) {
-                        if (!exists("reactive_sources", envir = new_builder$reactive_context)) {
-                          assign("reactive_sources", new.env(parent = emptyenv()), envir = new_builder$reactive_context)
-                        }
-                        reactive_sources <- get("reactive_sources", envir = new_builder$reactive_context)
-                        # Only register if not already registered (avoid duplicates)
-                        if (!exists(var_name, envir = reactive_sources, inherits = FALSE)) {
-                          assign(var_name, var_value$node_id, envir = reactive_sources)
-                          message("[HotReload] Registered reactive source: ", var_name, " -> ", var_value$node_id)
+                    if (inherits(var_value, "ReactiveProxy")) {
+                      cat("[HotReload]     Found ReactiveProxy:", var_name, 
+                          "node_id=", if (is.null(var_value$node_id)) "NULL" else var_value$node_id, "\n", file = stderr())
+                      if (!is.null(var_value$node_id)) {
+                        # Register this reactive by its variable name
+                        if (!is.null(new_builder$reactive_context)) {
+                          if (!exists("reactive_sources", envir = new_builder$reactive_context)) {
+                            assign("reactive_sources", new.env(parent = emptyenv()), envir = new_builder$reactive_context)
+                          }
+                          reactive_sources <- get("reactive_sources", envir = new_builder$reactive_context)
+                          # Only register if not already registered (avoid duplicates)
+                          if (!exists(var_name, envir = reactive_sources, inherits = FALSE)) {
+                            assign(var_name, var_value$node_id, envir = reactive_sources)
+                            message("[HotReload] Registered reactive source: ", var_name, " -> ", var_value$node_id)
+                          }
                         }
                       }
                     }
                   },
                   error = function(e) {
                     # Ignore errors when accessing variables
+                    cat("[HotReload]     Error accessing var", var_name, ":", conditionMessage(e), "\n", file = stderr())
                   }
                 )
               }
             },
             error = function(e) {
               # Ignore errors when scanning environments
+              cat("[HotReload]   Error scanning env", env_idx, ":", conditionMessage(e), "\n", file = stderr())
             }
           )
         }
@@ -560,12 +605,44 @@ HotReloadEngine <- R6::R6Class("HotReloadEngine",
         graph <- new_builder$get_graph()
         all_nodes <- graph$get_all_nodes()
         
+        # Debug: Log reactive sources that were registered
+        if (!is.null(new_builder$reactive_context) && 
+            exists("reactive_sources", envir = new_builder$reactive_context)) {
+          rs <- get("reactive_sources", envir = new_builder$reactive_context)
+          rs_names <- ls(envir = rs, all.names = TRUE)
+          cat("[HotReload] Re-extraction: reactive_sources contains:", 
+              if (length(rs_names) == 0) "NONE" else paste(rs_names, collapse = ", "), "\n", file = stderr())
+          for (n in rs_names) {
+            cat("[HotReload]   ", n, "->", get(n, envir = rs), "\n", file = stderr())
+          }
+        } else {
+          cat("[HotReload] Re-extraction: WARNING - reactive_sources not found!\n", file = stderr())
+        }
+        
         # Load helper functions
         ns <- asNamespace("hotShiny")
         base_path <- getwd()
         if (!file.exists(file.path(base_path, "R"))) {
           base_path <- system.file(package = "hotShiny")
         }
+        
+        # CRITICAL: Verify namespace builder is set correctly before re-extraction
+        ns_builder <- tryCatch({
+          if (exists("get_graph_builder", envir = ns)) {
+            get("get_graph_builder", envir = ns)()
+          } else {
+            NULL
+          }
+        }, error = function(e) NULL)
+        if (identical(ns_builder, new_builder)) {
+          cat("[HotReload] Re-extraction: namespace builder is correctly set to new_builder\n", file = stderr())
+        } else {
+          cat("[HotReload] Re-extraction: WARNING - namespace builder mismatch! Setting it now.\n", file = stderr())
+          if (exists("set_graph_builder", envir = ns)) {
+            get("set_graph_builder", envir = ns)(new_builder)
+          }
+        }
+        
         load_env <- new.env(parent = ns)
         dep_file <- file.path(base_path, "R/ir-dependency-tracker.R")
         if (file.exists(dep_file)) {
@@ -595,7 +672,11 @@ HotReloadEngine <- R6::R6Class("HotReloadEngine",
         for (node in all_nodes) {
           if (inherits(node, "RenderNode") && !is.null(node$expr)) {
             expr <- ast_to_expr_fn(node$expr)
+            cat("[HotReload] Re-extracting deps for", node$id, "output_name=", node$output_name, "\n", file = stderr())
+            cat("[HotReload]   expr:", paste(deparse(expr), collapse = " "), "\n", file = stderr())
             new_deps <- extract_deps_fn(expr)
+            cat("[HotReload]   old deps:", if (length(node$deps) == 0) "NONE" else paste(node$deps, collapse = ", "), "\n", file = stderr())
+            cat("[HotReload]   new deps:", if (length(new_deps) == 0) "NONE" else paste(new_deps, collapse = ", "), "\n", file = stderr())
             node$deps <- new_deps
             # Rebuild edges
             graph$edges <- Filter(function(e) e$to != node$id, graph$edges)
@@ -611,35 +692,8 @@ HotReloadEngine <- R6::R6Class("HotReloadEngine",
         self$app$executor$graph <- new_graph
         self$app$executor$builder <- new_builder
         
-        # CRITICAL: Preserve input values from old state_manager
-        message("[HotReload] Preserving input values...")
-        cat("[HotReload] Preserving input values from state_manager\n", file = stderr())
-        state_manager <- self$app$state_manager
-        if (!is.null(state_manager)) {
-          # Get all values from state manager using serialize_state
-          old_values <- state_manager$serialize_state()
-          cat("[HotReload] Found", length(old_values), "values in state_manager\n", file = stderr())
-          
-          # Copy input values to ensure they're available
-          for (node_id in names(old_values)) {
-            if (grepl("^input\\.", node_id)) {
-              value <- old_values[[node_id]]
-              cat("[HotReload] Preserving input value:", node_id, "=", value, "\n", file = stderr())
-              # Ensure the input node exists in the new graph
-              existing_node <- tryCatch(new_graph$get_node(node_id), error = function(e) NULL)
-              if (is.null(existing_node)) {
-                cat("[HotReload] Creating input node:", node_id, "\n", file = stderr())
-                # Register input in new builder
-                input_name <- sub("^input\\.", "", node_id)
-                new_builder$register_input(input_name)
-              }
-              # Set the value in state manager (already there, but make sure)
-              state_manager$set_value(node_id, value)
-            }
-          }
-        }
-        
-        # Also mark all nodes as dirty so they re-execute with the new logic
+        # Input values were already preserved and registered at the start of reload()
+        # Now we just need to mark all nodes as dirty so they re-execute with the new logic
         cat("[HotReload] Marking all nodes as dirty\n", file = stderr())
         all_new_nodes <- new_graph$get_all_nodes()
         for (node in all_new_nodes) {

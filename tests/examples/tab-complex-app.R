@@ -7,7 +7,7 @@ ui <- function() {
   hotShiny::div(
       sidebarLayout(
         sidebarPanel = sidebarPanel(
-          h1("Complex HotShiny Apps"),
+          h1("Hot Reload Test"),
           numericInput("a", "Value A:", value = 2),
           numericInput("b", "Value B:", value = 5)
         ),
@@ -88,10 +88,10 @@ app_file <- tryCatch({
     }
   }
   # Fallback: use relative path
-  normalizePath("tests/examples/complex-app.R", mustWork = TRUE)
+  normalizePath("tests/examples/tab-complex-app.R", mustWork = TRUE)
 }, error = function(e) {
   # Final fallback
-  file.path(getwd(), "tests/examples/complex-app.R")
+  file.path(getwd(), "tests/examples/tab-complex-app.R")
 })
 
 app_dir <- dirname(app_file)
