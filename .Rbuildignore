@@ -1,0 +1,6 @@
+^\.cursor
+^plan$
+^\.git
+^\.Rproj\.user
+^.*\.Rproj$
+^\.Rproj\.user$

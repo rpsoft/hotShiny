@@ -1,0 +1,1008 @@
+# Runtime Executor
+# Executes the reactive graph
+
+#' Reactive Executor
+#'
+#' Executes reactive graph nodes in correct order
+ReactiveExecutor <- R6::R6Class("ReactiveExecutor",
+  public = list(
+    graph = NULL,
+    state_manager = NULL,
+    execution_env = NULL,
+    helper_functions = NULL,
+    app = NULL,
+    builder = NULL,
+
+    # Set app reference (called from HotShinyApp)
+    set_app = function(app) {
+      self$app <- app
+    },
+    initialize = function(graph, state_manager = NULL, builder = NULL) {
+      self$graph <- graph
+      self$state_manager <- if (is.null(state_manager)) StateManager$new() else state_manager
+      # Use baseenv() as parent to avoid picking up variables from globalenv
+      # that might conflict (like if someone has a variable called "input.name")
+      self$execution_env <- new.env(parent = baseenv())
+      self$helper_functions <- new.env(parent = emptyenv())
+      self$builder <- builder
+      # Load helper functions
+      self$load_helper_functions()
+    },
+
+    # Load helper functions needed for execution
+    load_helper_functions = function() {
+      ns <- asNamespace("hotShiny")
+      base_path <- getwd()
+      if (!file.exists(file.path(base_path, "R"))) {
+        base_path <- NULL
+      }
+
+      load_env <- new.env(parent = ns)
+      if (!is.null(base_path)) {
+        # Load dependency tracker which has ast_to_expr
+        file_path <- file.path(base_path, "R/ir/dependency-tracker.R")
+        if (file.exists(file_path)) {
+          sys.source(file_path, envir = load_env)
+        }
+      }
+
+      # Store helper functions
+      if (exists("ast_to_expr", envir = load_env)) {
+        assign("ast_to_expr", get("ast_to_expr", envir = load_env), envir = self$helper_functions)
+      } else if (exists("ast_to_expr", envir = ns)) {
+        assign("ast_to_expr", get("ast_to_expr", envir = ns), envir = self$helper_functions)
+      }
+    },
+
+    # Get a helper function
+    get_helper_function = function(name) {
+      if (!is.null(self$helper_functions) && exists(name, envir = self$helper_functions)) {
+        return(get(name, envir = self$helper_functions))
+      }
+      # Try namespace
+      ns <- asNamespace("hotShiny")
+      if (exists(name, envir = ns)) {
+        return(get(name, envir = ns))
+      }
+      # Try loading it
+      self$load_helper_functions()
+      if (!is.null(self$helper_functions) && exists(name, envir = self$helper_functions)) {
+        return(get(name, envir = self$helper_functions))
+      }
+      stop("Helper function '", name, "' not found")
+    },
+
+    # Execute the graph
+    execute = function() {
+      cat("[Executor] execute() called\n", file = stderr())
+      # Get graph from builder if available (graph may be updated after executor creation)
+      graph_to_use <- self$graph
+      if (!is.null(self$builder)) {
+        graph_from_builder <- self$builder$get_graph()
+        if (!is.null(graph_from_builder)) {
+          graph_to_use <- graph_from_builder
+          # Update executor's graph reference to latest
+          self$graph <- graph_to_use
+          cat("[Executor] execute() using graph from builder, updated reference\n", file = stderr())
+        }
+      }
+
+      # Check graph
+      if (is.null(graph_to_use)) {
+        cat("[Executor] execute() ERROR: graph is NULL!\n", file = stderr())
+        return(invisible(NULL))
+      }
+      all_nodes_check <- graph_to_use$get_all_nodes()
+      cat("[Executor] execute() graph has", length(all_nodes_check), "nodes\n", file = stderr())
+      # Get topological sort
+      execution_order <- graph_to_use$topological_sort()
+      cat("[Executor] Execution order:", paste(execution_order, collapse = ", "), " (length:", length(execution_order), ")\n", file = stderr())
+
+      # If execution order is empty, log why
+      if (length(execution_order) == 0) {
+        cat("[Executor] WARNING: Execution order is empty! Graph nodes:", length(all_nodes_check), ", Edges:", length(graph_to_use$edges), "\n", file = stderr())
+        if (length(all_nodes_check) > 0) {
+          cat("[Executor] Node IDs:", paste(sapply(all_nodes_check, function(n) if (inherits(n, "ReactiveNode")) n$id else if (is.list(n)) n$id else "unknown"), collapse = ", "), "\n", file = stderr())
+        }
+        if (length(graph_to_use$edges) > 0) {
+          cat("[Executor] Edge from/to:", paste(sapply(graph_to_use$edges, function(e) paste(e$from, "->", e$to)), collapse = ", "), "\n", file = stderr())
+        }
+      }
+
+      # Execute nodes in order
+      executed_count <- 0
+      for (node_id in execution_order) {
+        node <- graph_to_use$get_node(node_id)
+        if (is.null(node)) {
+          cat("[Executor] Node", node_id, "not found\n", file = stderr())
+          next
+        }
+
+        # Check if node is dirty or needs execution
+        should_exec <- self$should_execute(node)
+        cat("[Executor] Node", node_id, "type=", node$type, ", should_execute=", should_exec, "\n", file = stderr())
+        if (should_exec) {
+          cat("[Executor] Executing node", node_id, "\n", file = stderr())
+          self$execute_node(node)
+          executed_count <- executed_count + 1
+        }
+      }
+
+      cat("[Executor] execute() executed", executed_count, "nodes\n", file = stderr())
+
+      # Clear dirty flags AFTER all execution is complete
+      self$state_manager$clear_all_dirty()
+      cat("[Executor] execute() completed, cleared dirty flags\n", file = stderr())
+    },
+
+    # Check if node should be executed
+    should_execute = function(node) {
+      # Always execute if dirty
+      if (self$state_manager$is_dirty(node$id)) {
+        cat("[Executor] should_execute: node", node$id, "is dirty\n", file = stderr())
+        return(TRUE)
+      }
+
+      # Check if any dependency is dirty
+      for (dep_id in node$deps) {
+        if (self$state_manager$is_dirty(dep_id)) {
+          cat("[Executor] should_execute: node", node$id, "has dirty dependency", dep_id, "\n", file = stderr())
+          return(TRUE)
+        }
+      }
+
+      cat("[Executor] should_execute: node", node$id, "does NOT need execution\n", file = stderr())
+      return(FALSE)
+
+      # For observers, check if they need to run
+      if (inherits(node, "ObserverNode")) {
+        destroyed <- if (is.null(node$metadata$destroyed)) FALSE else node$metadata$destroyed
+        if (!node$suspended && !destroyed) {
+          # Check if dependencies changed
+          return(any(vapply(node$deps, function(d) {
+            self$state_manager$is_dirty(d)
+          }, logical(1))))
+        }
+      }
+
+      FALSE
+    },
+
+    # Execute a single node
+    execute_node = function(node) {
+      cat("[Executor] execute_node: executing", node$id, "type=", node$type, "\n", file = stderr())
+      tryCatch(
+        {
+          self$state_manager$set_execution_state(node$id, "executing")
+
+          value <- switch(node$type,
+            "input" = {
+              # Input nodes are set externally
+              val <- self$state_manager$get_value(node$id)
+              cat("[Executor] execute_node: input node", node$id, "value='", val, "'\n", file = stderr())
+              val
+            },
+            "reactive" = {
+              val <- self$execute_reactive(node)
+              cat("[Executor] execute_node: reactive node", node$id, "returned value='", if (is.null(val)) "NULL" else val, "'\n", file = stderr())
+              val
+            },
+            "observe" = {
+              self$execute_observer(node)
+              NULL # Observers don't return values
+            },
+            "render" = {
+              val <- self$execute_render(node)
+              cat("[Executor] execute_node: render node", node$id, "returned value='", if (is.null(val)) "NULL" else val, "'\n", file = stderr())
+              val
+            },
+            "output" = {
+              # Output nodes get values from render nodes
+              val <- self$state_manager$get_value(node$id)
+              cat("[Executor] execute_node: output node", node$id, "value='", if (is.null(val)) "NULL" else val, "'\n", file = stderr())
+              val
+            },
+            {
+              cat("[Executor] execute_node: WARNING - unknown node type:", node$type, "\n", file = stderr())
+              warning("Unknown node type: ", node$type)
+              NULL
+            }
+          )
+
+          # Store value if not NULL
+          if (!is.null(value)) {
+            self$state_manager$set_value(node$id, value)
+            cat("[Executor] execute_node: stored value '", value, "' for", node$id, "\n", file = stderr())
+          } else {
+            cat("[Executor] execute_node: value is NULL for", node$id, ", not storing\n", file = stderr())
+          }
+
+          # Don't clear dirty flag here - let execute() clear all at once
+          # This ensures dependencies stay dirty until all nodes are executed
+          # self$state_manager$clear_dirty(node$id)
+          self$state_manager$set_execution_state(node$id, "completed")
+        },
+        error = function(e) {
+          error_msg <- conditionMessage(e)
+
+          # Catch all errors and handle them internally
+          # DO NOT send errors to WebSocket clients
+          # This prevents error spam and internal errors from being exposed
+
+          # For input-related errors, store empty string
+          if (grepl("object.*input", error_msg, ignore.case = TRUE)) {
+            # Input-related error - store empty string and mark as completed
+            self$state_manager$set_value(node$id, "")
+            self$state_manager$set_execution_state(node$id, "completed")
+            return(invisible(NULL))
+          }
+
+          # For other errors, log but don't send to client
+          self$state_manager$set_execution_state(node$id, list(
+            status = "error",
+            error = error_msg
+          ))
+          warning("Error executing node ", node$id, ": ", error_msg)
+
+          # Store empty string to prevent NULL values
+          self$state_manager$set_value(node$id, "")
+        }
+      )
+    },
+
+    # Helper to create input proxy
+    create_input_proxy = function() {
+      app <- self$get_app()
+      if (is.null(app)) {
+        return(NULL)
+      }
+
+      # Get InputProxy class from namespace
+      ns <- asNamespace("hotShiny")
+      InputProxyClass <- if (exists("InputProxy", envir = ns)) {
+        get("InputProxy", envir = ns)
+      } else {
+        # Fallback: try to load it
+        base_path <- getwd()
+        if (!file.exists(file.path(base_path, "R"))) {
+          base_path <- system.file(package = "hotShiny")
+        }
+        load_env <- new.env(parent = ns)
+        values_file <- file.path(base_path, "R/core/values.R")
+        if (file.exists(values_file)) {
+          sys.source(values_file, envir = load_env)
+          if (exists("InputProxy", envir = load_env)) {
+            get("InputProxy", envir = load_env)
+          } else {
+            NULL
+          }
+        } else {
+          NULL
+        }
+      }
+
+      if (is.null(InputProxyClass)) {
+        return(NULL)
+      }
+
+      builder_to_use <- self$builder
+      if (is.null(builder_to_use) && !is.null(app)) {
+        builder_to_use <- app$builder
+      }
+      if (!is.null(builder_to_use)) {
+        return(InputProxyClass$new(builder = builder_to_use, executor = self))
+      }
+
+      NULL
+    },
+
+    # Execute a reactive expression
+    execute_reactive = function(node) {
+      if (is.null(node$expr)) {
+        cat("[Executor] execute_reactive: node", node$id, "has no expr\n", file = stderr())
+        return(NULL)
+      }
+
+      cat("[Executor] execute_reactive: executing node", node$id, "\n", file = stderr())
+
+      # Reconstruct expression from AST
+      # Get ast_to_expr function
+      ast_to_expr_fn <- self$get_helper_function("ast_to_expr")
+      expr <- ast_to_expr_fn(node$expr)
+      cat("[Executor] execute_reactive: reconstructed expr:", paste(deparse(expr), collapse = " "), "\n", file = stderr())
+
+      # Get dependency values
+      # Separate input dependencies from reactive dependencies
+      input_deps <- character(0)
+      reactive_deps <- list()
+
+      for (dep_id in node$deps) {
+        if (grepl("^input\\.", dep_id)) {
+          # Input dependency - don't assign as variable, use input proxy
+          input_deps <- c(input_deps, dep_id)
+        } else {
+          # Reactive dependency - need to map node ID to variable name
+          # First try to get the variable name from reactive_sources registry
+          dep_name <- NULL
+          app <- self$get_app()
+          if (!is.null(app) && !is.null(app$builder) && !is.null(app$builder$reactive_context)) {
+            reactive_sources <- tryCatch(
+              {
+                app$builder$reactive_context$reactive_sources
+              },
+              error = function(e) NULL
+            )
+            if (!is.null(reactive_sources) && is.environment(reactive_sources)) {
+              # Find the variable name that maps to this node ID
+              for (var_name in ls(envir = reactive_sources, all.names = TRUE)) {
+                if (exists(var_name, envir = reactive_sources, inherits = FALSE)) {
+                  mapped_id <- get(var_name, envir = reactive_sources, inherits = FALSE)
+                  if (mapped_id == dep_id) {
+                    dep_name <- var_name
+                    break
+                  }
+                }
+              }
+            }
+          }
+          # Fallback: use the node ID without prefix as name
+          if (is.null(dep_name)) {
+            dep_name <- gsub("^[^.]+\\.", "", dep_id)
+          }
+          dep_value <- self$get_value(dep_id)
+          reactive_deps[[dep_name]] <- dep_value
+        }
+      }
+
+      # Create evaluation environment
+      # Use baseenv() as parent to avoid picking up variables from globalenv
+      # that might conflict (like if someone has a variable called "input.name")
+      eval_env <- new.env(parent = baseenv())
+
+      # Add reactive dependency values to environment
+      # Make them callable (like Shiny's reactive expressions)
+      # In Shiny, reactive() returns a function that can be called with ()
+      for (name in names(reactive_deps)) {
+        # Get the actual reactive node ID to retrieve the value dynamically
+        dep_id <- NULL
+        app <- self$get_app()
+        if (!is.null(app) && !is.null(app$builder) && !is.null(app$builder$reactive_context)) {
+          reactive_sources <- tryCatch(
+            {
+              app$builder$reactive_context$reactive_sources
+            },
+            error = function(e) NULL
+          )
+          if (!is.null(reactive_sources) && is.environment(reactive_sources)) {
+            if (exists(name, envir = reactive_sources, inherits = FALSE)) {
+              dep_id <- get(name, envir = reactive_sources, inherits = FALSE)
+            }
+          }
+        }
+
+        # Create a closure that gets the current value of the reactive
+        # This ensures we always get the latest value when the function is called
+        local({
+          n <- name
+          dep_node_id <- dep_id
+          exec <- self
+          # Create a function that retrieves the current value
+          reactive_fn <- function() {
+            if (!is.null(dep_node_id)) {
+              exec$get_value(dep_node_id)
+            } else {
+              ""
+            }
+          }
+          assign(n, reactive_fn, envir = eval_env)
+        })
+      }
+
+      # Add input proxy so input$x can be accessed in reactive expressions
+      # This MUST be done before evaluating the expression
+      input_proxy <- self$create_input_proxy()
+      if (!is.null(input_proxy)) {
+        assign("input", input_proxy, envir = eval_env)
+      } else {
+        cat("[Executor] execute_reactive: WARNING - input proxy is NULL, using dummy\n", file = stderr())
+        # If we can't create input proxy, create a dummy one that returns empty strings
+        # This prevents "object 'input' not found" errors
+        dummy_input <- structure(
+          list(get = function(name) ""),
+          class = "InputProxy"
+        )
+        assign("input", dummy_input, envir = eval_env)
+      }
+
+      cat("[Executor] execute_reactive: evaluating expr:", paste(deparse(expr), collapse = " "), "\n", file = stderr())
+      # Evaluate expression with error handling
+      result <- tryCatch(
+        {
+          eval(expr, envir = eval_env)
+        },
+        error = function(e) {
+          # Catch all errors and return empty string
+          # This prevents errors from propagating to the client
+          error_msg <- conditionMessage(e)
+          cat("[Executor] execute_reactive: ERROR evaluating:", error_msg, "\n", file = stderr())
+
+          # Log warning for debugging, but don't send to client
+          if (grepl("object.*input", error_msg, ignore.case = TRUE)) {
+            # Input-related error - return empty string silently
+            return("")
+          } else {
+            # Other errors - log but still return empty string
+            warning("Error evaluating reactive expression: ", error_msg)
+            return("")
+          }
+        }
+      )
+
+      # Ensure result is not NULL
+      if (is.null(result)) {
+        result <- ""
+      }
+
+      cat("[Executor] execute_reactive: result='", result, "'\n", file = stderr())
+
+      # Store result in state manager
+      self$state_manager$set_value(node$id, result)
+
+      result
+    },
+
+    # Execute an observer
+    execute_observer = function(node) {
+      if (is.null(node$expr)) {
+        return(NULL)
+      }
+
+      # Check if suspended
+      if (node$suspended) {
+        return(NULL)
+      }
+
+      # Check if once and already executed
+      executed <- if (is.null(node$metadata$executed)) FALSE else node$metadata$executed
+      if (node$once && executed) {
+        return(NULL)
+      }
+
+      # Reconstruct expression
+      ast_to_expr_fn <- self$get_helper_function("ast_to_expr")
+      expr <- ast_to_expr_fn(node$expr)
+
+      # Get dependency values
+      eval_env <- new.env(parent = self$execution_env)
+
+      # Add input proxy (would get from app context)
+      # assign("input", input_proxy, envir = eval_env)
+
+      # Evaluate (side effects)
+      eval(expr, envir = eval_env)
+
+      # Mark as executed if once
+      if (node$once) {
+        node$metadata$executed <- TRUE
+      }
+
+      NULL
+    },
+
+    # Execute a render function
+    execute_render = function(node) {
+      if (is.null(node$expr)) {
+        cat("[Executor] execute_render: node", node$id, "has no expr\n", file = stderr())
+        return(NULL)
+      }
+
+      # Reconstruct expression
+      ast_to_expr_fn <- self$get_helper_function("ast_to_expr")
+      expr <- ast_to_expr_fn(node$expr)
+
+      # Get dependency values
+      # Separate input dependencies from reactive dependencies
+      input_deps <- character(0)
+      reactive_deps <- list()
+
+      cat("[Executor] execute_render: node deps:", paste(node$deps, collapse = ", "), "\n", file = stderr())
+
+      for (dep_id in node$deps) {
+        if (grepl("^input\\.", dep_id)) {
+          # Input dependency - don't assign as variable, use input proxy
+          input_deps <- c(input_deps, dep_id)
+        } else {
+          # Reactive dependency - need to map node ID to variable name
+          # First try to get the variable name from reactive_sources registry
+          dep_name <- NULL
+          app <- self$get_app()
+          if (!is.null(app) && !is.null(app$builder) && !is.null(app$builder$reactive_context)) {
+            reactive_sources <- tryCatch(
+              {
+                app$builder$reactive_context$reactive_sources
+              },
+              error = function(e) NULL
+            )
+            if (!is.null(reactive_sources) && is.environment(reactive_sources)) {
+              # Find the variable name that maps to this node ID
+              for (var_name in ls(envir = reactive_sources, all.names = TRUE)) {
+                if (exists(var_name, envir = reactive_sources, inherits = FALSE)) {
+                  mapped_id <- get(var_name, envir = reactive_sources, inherits = FALSE)
+                  if (mapped_id == dep_id) {
+                    dep_name <- var_name
+                    break
+                  }
+                }
+              }
+            }
+          }
+          # Fallback: use the node ID without prefix as name
+          if (is.null(dep_name)) {
+            dep_name <- gsub("^[^.]+\\.", "", dep_id)
+          }
+          dep_value <- self$get_value(dep_id)
+          reactive_deps[[dep_name]] <- dep_value
+        }
+      }
+
+      # Create evaluation environment
+      # Use baseenv() as parent to avoid picking up variables from globalenv
+      # that might conflict (like if someone has a variable called "input.name")
+      eval_env <- new.env(parent = baseenv())
+
+      # Add reactive dependency values to environment
+      # Make them callable (like Shiny's reactive expressions)
+      # In Shiny, reactive() returns a function that can be called with ()
+      for (name in names(reactive_deps)) {
+        # Get the actual reactive node ID to retrieve the value dynamically
+        dep_id <- NULL
+        app <- self$get_app()
+        if (!is.null(app) && !is.null(app$builder) && !is.null(app$builder$reactive_context)) {
+          reactive_sources <- tryCatch(
+            {
+              app$builder$reactive_context$reactive_sources
+            },
+            error = function(e) NULL
+          )
+          if (!is.null(reactive_sources) && is.environment(reactive_sources)) {
+            if (exists(name, envir = reactive_sources, inherits = FALSE)) {
+              dep_id <- get(name, envir = reactive_sources, inherits = FALSE)
+            }
+          }
+        }
+
+        # Create a closure that gets the current value of the reactive
+        # This ensures we always get the latest value when the function is called
+        local({
+          n <- name
+          dep_node_id <- dep_id
+          exec <- self
+          # Create a function that retrieves the current value
+          reactive_fn <- function() {
+            if (!is.null(dep_node_id)) {
+              exec$get_value(dep_node_id)
+            } else {
+              ""
+            }
+          }
+          assign(n, reactive_fn, envir = eval_env)
+        })
+        cat("[Executor] execute_render: added reactive function", name, "->", if (is.null(dep_id)) "NULL" else dep_id, "\n", file = stderr())
+      }
+
+      # CRITICAL: Always check expression for function calls and ensure they're available
+      # This handles cases where reactive_sources registry might not be populated yet,
+      # or where reactive_deps has entries with wrong names (like reactive_0 instead of greeting)
+      expr_str <- paste(deparse(expr), collapse = " ")
+      cat("[Executor] execute_render: expression string:", expr_str, "\n", file = stderr())
+
+      # Extract function calls from expression (simple pattern matching)
+      # Look for patterns like greeting(), reactive_0(), etc.
+      function_calls <- regmatches(expr_str, gregexpr("\\b[a-zA-Z_][a-zA-Z0-9_]*\\(\\)", expr_str))[[1]]
+      function_names <- gsub("\\(\\)", "", function_calls)
+      cat("[Executor] execute_render: found function calls in expression:", paste(function_names, collapse = ", "), "\n", file = stderr())
+
+      # For each function call, ensure it's available in eval_env
+      app <- self$get_app()
+      if (!is.null(app) && !is.null(app$builder) && !is.null(app$builder$reactive_context)) {
+        reactive_sources <- tryCatch(
+          {
+            app$builder$reactive_context$reactive_sources
+          },
+          error = function(e) NULL
+        )
+        if (!is.null(reactive_sources) && is.environment(reactive_sources)) {
+          reactive_var_names <- ls(envir = reactive_sources, all.names = TRUE)
+          cat("[Executor] execute_render: reactive_sources registry has:", paste(reactive_var_names, collapse = ", "), "\n", file = stderr())
+
+          for (func_name in function_names) {
+            # Skip if already in eval_env
+            if (exists(func_name, envir = eval_env, inherits = FALSE)) {
+              cat("[Executor] execute_render: function", func_name, "already in eval_env\n", file = stderr())
+              next
+            }
+
+            # Check if this function name is in reactive_sources
+            if (exists(func_name, envir = reactive_sources, inherits = FALSE)) {
+              func_node_id <- get(func_name, envir = reactive_sources, inherits = FALSE)
+              cat("[Executor] execute_render: found", func_name, "in reactive_sources ->", func_node_id, "\n", file = stderr())
+              # Add function to eval_env
+              local({
+                fname <- func_name
+                dep_node_id <- func_node_id
+                exec <- self
+                reactive_fn <- function() {
+                  if (!is.null(dep_node_id)) {
+                    exec$get_value(dep_node_id)
+                  } else {
+                    ""
+                  }
+                }
+                assign(fname, reactive_fn, envir = eval_env)
+              })
+              cat("[Executor] execute_render: added function", func_name, "to eval_env\n", file = stderr())
+            } else {
+              cat("[Executor] execute_render: WARNING - function", func_name, "not found in reactive_sources\n", file = stderr())
+            }
+          }
+        }
+      }
+
+      # Add input proxy so input$x can be accessed in render expressions
+      # This MUST be done before evaluating the expression
+      input_proxy <- self$create_input_proxy()
+      if (!is.null(input_proxy)) {
+        assign("input", input_proxy, envir = eval_env)
+        # Test if input proxy works
+        test_input <- tryCatch(
+          {
+            input_proxy$get("name")
+          },
+          error = function(e) NULL
+        )
+        cat("[Executor] execute_render: input proxy test - input$name = '", if (is.null(test_input)) "NULL" else test_input, "'\n", file = stderr())
+      } else {
+        cat("[Executor] execute_render: WARNING - input proxy is NULL, using dummy\n", file = stderr())
+        # If we can't create input proxy, create a dummy one that returns empty strings
+        # This prevents "object 'input' not found" errors
+        dummy_input <- structure(list(), class = "InputProxy")
+        assign("input", dummy_input, envir = eval_env)
+      }
+
+      cat("[Executor] execute_render: evaluating expr:", paste(deparse(expr), collapse = " "), "\n", file = stderr())
+      cat("[Executor] execute_render: available functions in eval_env:", paste(ls(envir = eval_env), collapse = ", "), "\n", file = stderr())
+      # Evaluate expression with error handling
+      result <- tryCatch(
+        {
+          eval(expr, envir = eval_env)
+        },
+        error = function(e) {
+          # Catch all errors and return empty string
+          # This prevents errors from propagating to the client
+          error_msg <- conditionMessage(e)
+          cat("[Executor] execute_render: ERROR evaluating:", error_msg, "\n", file = stderr())
+
+          # Log warning for debugging, but don't send to client
+          if (grepl("object.*input", error_msg, ignore.case = TRUE)) {
+            # Input-related error - return empty string silently
+            return("")
+          } else {
+            # Other errors - log but still return empty string
+            warning("Error evaluating render expression: ", error_msg)
+            return("")
+          }
+        }
+      )
+
+      # Ensure result is not NULL
+      if (is.null(result)) {
+        result <- ""
+      }
+
+      cat("[Executor] execute_render: result='", result, "'\n", file = stderr())
+
+      # Store result
+      self$state_manager$set_value(node$id, result)
+
+      # Format based on render type
+      formatted <- switch(node$render_type,
+        "text" = as.character(result),
+        "plot" = result, # Would need to convert to base64 or similar
+        "table" = result,
+        "datatable" = result,
+        "ui" = result,
+        result
+      )
+
+      # Store formatted result
+      self$state_manager$set_value(node$id, formatted)
+
+      formatted
+    },
+
+    # Get value for a node (with caching)
+    get_value = function(node_id) {
+      # Validate node_id is a string
+      if (!is.character(node_id) || length(node_id) != 1) {
+        warning("Invalid node_id in get_value: ", deparse(node_id))
+        return("")
+      }
+
+      tryCatch(
+        {
+          # Get graph from builder if available
+          graph_to_use <- self$graph
+          if (!is.null(self$builder)) {
+            graph_from_builder <- self$builder$get_graph()
+            if (!is.null(graph_from_builder)) {
+              graph_to_use <- graph_from_builder
+            }
+          }
+          # Get node to check type
+          node <- graph_to_use$get_node(node_id)
+          if (!is.null(node)) {
+            # For InputNodes, don't execute - just return value from state manager
+            if (inherits(node, "InputNode")) {
+              value <- self$state_manager$get_value(node_id)
+              if (is.null(value)) {
+                return("")
+              }
+              return(value)
+            }
+
+            # For other nodes, check if they need execution (dirty or dependency dirty)
+            # IMPORTANT: We need to execute the node if it's dirty OR if any dependency is dirty
+            # This ensures reactive nodes are re-executed when their inputs change
+            needs_execution <- self$should_execute(node)
+            if (needs_execution) {
+              # Execute the node - this will compute and store the new value
+              self$execute_node(node)
+            }
+
+            # Get value from state manager (might be cached or just computed)
+            value <- self$state_manager$get_value(node_id)
+            if (is.null(value)) {
+              # If value is still NULL after execution, return empty string
+              return("")
+            }
+            return(value)
+          }
+
+          # Node doesn't exist - return empty string instead of NULL
+          # This prevents "object not found" errors
+          ""
+        },
+        error = function(e) {
+          # If there's an error, return empty string
+          # Don't print warning for missing input nodes (they're expected to be empty initially)
+          if (!grepl("^input\\.", node_id)) {
+            warning("Error getting value for node '", node_id, "': ", conditionMessage(e))
+          }
+          ""
+        }
+      )
+    },
+
+    # Set input value
+    set_input = function(input_name, value) {
+      tryCatch(
+        {
+          cat("[Executor] set_input: input_name=", input_name, ", value='", value, "'\n", file = stderr())
+          node_id <- paste0("input.", input_name)
+
+          # CRITICAL: Ensure input node exists in graph before setting value
+          # Get graph from builder
+          graph_to_use <- self$graph
+          if (!is.null(self$builder)) {
+            graph_from_builder <- self$builder$get_graph()
+            if (!is.null(graph_from_builder)) {
+              graph_to_use <- graph_from_builder
+            }
+          }
+
+          # CRITICAL: Register input node if it doesn't exist
+          # This must happen BEFORE we set the value and mark as dirty
+          if (!is.null(self$builder)) {
+            graph_to_check <- self$builder$get_graph()
+            existing_node <- graph_to_check$get_node(node_id)
+            if (is.null(existing_node)) {
+              cat("[Executor] set_input: registering input node", node_id, "\n", file = stderr())
+              input_node <- self$builder$register_input(input_name)
+              cat("[Executor] set_input: input node registered, id=", input_node$id, "\n", file = stderr())
+              # CRITICAL: Update executor's graph reference to include the new node
+              # This ensures the graph has the input node when we do topological sort
+              self$graph <- self$builder$get_graph()
+              cat("[Executor] set_input: updated executor graph reference, now has", length(self$graph$get_all_nodes()), "nodes\n", file = stderr())
+              # Verify node is now in graph
+              verify_node <- self$graph$get_node(node_id)
+              if (!is.null(verify_node)) {
+                cat("[Executor] set_input: verified input node is in graph\n", file = stderr())
+              } else {
+                cat("[Executor] set_input: WARNING - input node not found in graph after registration!\n", file = stderr())
+              }
+            } else {
+              cat("[Executor] set_input: input node", node_id, "already exists in graph\n", file = stderr())
+              # Still update graph reference to ensure we have the latest
+              self$graph <- self$builder$get_graph()
+            }
+          }
+
+          # Trim whitespace from input value before storing
+          value_trimmed <- trimws(as.character(value))
+          self$state_manager$set_value(node_id, value_trimmed)
+          cat("[Executor] set_input: stored value '", value_trimmed, "' for", node_id, "\n", file = stderr())
+          # Mark input node as dirty
+          self$state_manager$mark_dirty(node_id)
+          cat("[Executor] set_input: marked", node_id, "as dirty\n", file = stderr())
+
+          # CRITICAL: Ensure graph reference is up-to-date before execution
+          # The input node was just registered, so get fresh graph from builder
+          if (!is.null(self$builder)) {
+            self$graph <- self$builder$get_graph()
+            cat("[Executor] set_input: refreshed graph reference before execute(), now has", length(self$graph$get_all_nodes()), "nodes\n", file = stderr())
+          }
+
+          # Trigger execution
+          self$execute()
+          cat("[Executor] set_input: execute() completed\n", file = stderr())
+          # Send output updates via WebSocket if available
+          self$send_output_updates()
+          cat("[Executor] set_input: send_output_updates() completed\n", file = stderr())
+        },
+        error = function(e) {
+          # Catch all errors during input processing
+          # DO NOT send errors to client - they are internal errors
+          error_msg <- conditionMessage(e)
+          cat("[Executor] ERROR in set_input:", error_msg, "\n", file = stderr())
+
+          # Log warning for debugging, but don't send to client
+          warning("[Executor] Error setting input '", input_name, "': ", error_msg)
+
+          # Always return silently to prevent error propagation
+          return(invisible(NULL))
+        }
+      )
+    },
+
+    # Send output updates to clients
+    send_output_updates = function() {
+      # Get WebSocket server from app if available
+      app <- self$get_app()
+      if (is.null(app)) {
+        message("[Executor] No app reference available for send_output_updates")
+        return(invisible(NULL))
+      }
+
+      ws_server <- app$ws_server
+      if (is.null(ws_server)) {
+        message("[Executor] No WebSocket server available")
+        return(invisible(NULL))
+      }
+
+      # Get WS_MESSAGE_TYPES
+      ns <- asNamespace("hotShiny")
+      base_path <- getwd()
+      if (!file.exists(file.path(base_path, "R"))) {
+        base_path <- system.file(package = "hotShiny")
+      }
+      load_env <- new.env(parent = ns)
+      ws_file <- file.path(base_path, "R/server/websocket.R")
+      if (file.exists(ws_file)) {
+        sys.source(ws_file, envir = load_env)
+      }
+
+      WS_MESSAGE_TYPES <- if (exists("WS_MESSAGE_TYPES", envir = load_env)) {
+        get("WS_MESSAGE_TYPES", envir = load_env)
+      } else if (exists("WS_MESSAGE_TYPES", envir = ns)) {
+        get("WS_MESSAGE_TYPES", envir = ns)
+      } else {
+        list(VALUE_UPDATE = "value_update")
+      }
+
+      # Get all output nodes and send their values
+      # Get graph from builder if available (graph may be updated after executor creation)
+      graph <- self$graph
+      if (!is.null(self$builder)) {
+        graph_from_builder <- self$builder$get_graph()
+        if (!is.null(graph_from_builder)) {
+          graph <- graph_from_builder
+        }
+      }
+      all_nodes <- graph$get_all_nodes()
+      cat("[Executor] send_output_updates: checking", length(all_nodes), "nodes\n", file = stderr())
+
+      for (node in all_nodes) {
+        # Check if it's a RenderNode - try multiple ways
+        is_render <- FALSE
+        output_name <- NULL
+
+        # Check node type - RenderNode inherits from ReactiveNode which has type="render"
+        node_type <- NULL
+        if (inherits(node, "RenderNode")) {
+          is_render <- TRUE
+          node_type <- "render"
+          output_name <- node$output_name
+          # Also check metadata
+          if (is.null(output_name) && !is.null(node$metadata) && !is.null(node$metadata$output_name)) {
+            output_name <- node$metadata$output_name
+          }
+        } else if (!is.null(node$type) && node$type == "render") {
+          is_render <- TRUE
+          output_name <- node$output_name
+          if (is.null(output_name) && !is.null(node$metadata) && !is.null(node$metadata$output_name)) {
+            output_name <- node$metadata$output_name
+          }
+        }
+
+        # Debug logging
+        if (is_render) {
+          cat("[Executor] send_output_updates: Found render node", node$id, "with output_name=", if (is.null(output_name)) "NULL" else output_name, "\n", file = stderr())
+        }
+
+        if (is_render) {
+          node_id <- node$id
+
+          # If output_name is still NULL, try to extract from node_id
+          if (is.null(output_name) && grepl("^render\\.", node_id)) {
+            output_name <- sub("^render\\.", "", node_id)
+          }
+
+          # Skip if we don't have an output_name
+          if (is.null(output_name) || output_name == "") {
+            next
+          }
+
+          # Get value - this will execute the node if needed
+          value <- self$get_value(node_id)
+          cat("[Executor] send_output_updates: node", node_id, "value='", value, "'\n", file = stderr())
+
+          # Always send value updates, even if empty (so client can clear/update UI)
+          # Convert NULL to empty string
+          if (is.null(value)) {
+            value <- ""
+          }
+
+          # Send value update with output name for client to find the element
+          update_data <- list(
+            node_id = node_id,
+            output_name = output_name,
+            value = value
+          )
+          cat("[Executor] send_output_updates: sending update for", output_name, "with value='", value, "' to", length(ws_server$connections), "connections\n", file = stderr())
+          # Send to all connections
+          sent_count <- 0
+          for (conn_id in names(ws_server$connections)) {
+            conn <- ws_server$connections[[conn_id]]
+            if (!is.null(conn)) {
+              tryCatch(
+                {
+                  ws_server$send_message(conn, WS_MESSAGE_TYPES$VALUE_UPDATE, update_data)
+                  sent_count <- sent_count + 1
+                  cat("[Executor] send_output_updates: sent message to connection", conn_id, "\n", file = stderr())
+                },
+                error = function(e) {
+                  cat("[Executor] send_output_updates: ERROR sending to", conn_id, ":", conditionMessage(e), "\n", file = stderr())
+                }
+              )
+            }
+          }
+          cat("[Executor] send_output_updates: sent", sent_count, "messages total\n", file = stderr())
+        }
+      }
+    },
+
+    # Get app reference (stored when executor is created)
+    get_app = function() {
+      if (exists("app", envir = self)) {
+        get("app", envir = self)
+      } else {
+        NULL
+      }
+    },
+
+    # Get state manager
+    get_state_manager = function() {
+      self$state_manager
+    }
+  )
+)

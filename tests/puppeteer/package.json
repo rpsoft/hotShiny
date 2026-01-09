@@ -1,0 +1,26 @@
+{
+  "name": "hotshiny-puppeteer-tests",
+  "version": "1.0.0",
+  "description": "Puppeteer tests for hotShiny package",
+  "main": "basic-app.test.js",
+  "scripts": {
+    "test": "jest --testTimeout=30000",
+    "test:watch": "jest --watch --testTimeout=30000",
+    "test:debug": "node basic-app.test.js"
+  },
+  "keywords": [
+    "puppeteer",
+    "testing",
+    "hotshiny"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "jest": "^29.0.0",
+    "puppeteer": "^21.0.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testTimeout": 30000
+  }
+}

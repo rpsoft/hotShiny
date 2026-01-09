@@ -1,0 +1,2330 @@
+Warning messages:
+1: replacing previous import ‘rlang::interrupt’ by ‘httpuv::interrupt’ when loading ‘hotShiny’ 
+2: replacing previous import ‘rlang::flatten’ by ‘jsonlite::flatten’ when loading ‘hotShiny’ 
+3: replacing previous import ‘rlang::unbox’ by ‘jsonlite::unbox’ when loading ‘hotShiny’ 
+Hot reload enabled
+<HotShinyApp>
+  Public:
+    builder: GraphBuilder, R6
+    clone: function (deep = FALSE) 
+    executor: ReactiveExecutor, R6
+    get_executor: function () 
+    get_graph: function () 
+    get_state_manager: function () 
+    initialize: function (ui, server, builder, executor, state_manager, ...) 
+    render_ui: function () 
+    runApp: function (host = "127.0.0.1", port = 3838, ...) 
+    running: FALSE
+    server: function (input, output, session) 
+    server_func: function (input, output, session) 
+    server_handle: NULL
+    server_host: NULL
+    server_port: NULL
+    start_http_server: function (host, port, ...) 
+    state_manager: StateManager, R6
+    ui: function () 
+    ui_to_html: function (ui_obj) 
+    ws_server: NULL
+[RenderProxy] Successfully registered node:  render_1 , output_name= greeting 
+[App] scanning 4 environments
+[App] env has vars: app_obj, ast_to_expr, clear_current_output_name, expr_to_ast, extract_dependencies, get_current_output_name, get_graph_builder, get_source_location, observe, observeEvent, reactive, reactiveValues, renderDataTable, renderPlot, renderTable, renderText, renderUI, server, set_current_output_name, set_graph_builder, ui 
+[App] env has vars: greeting, input, output, session 
+[App] found ReactiveProxy: greeting id= reactive_0 
+[App] Registered reactive source: greeting -> reactive_0 
+[App] env has vars: greeting, input, output, session 
+[App] found ReactiveProxy: greeting id= reactive_0 
+[App] env has vars: greeting, input, output, session 
+[App] found ReactiveProxy: greeting id= reactive_0 
+[App] Re-extraction: Found 3 nodes total
+[App] Re-extraction: Found 1 reactive nodes
+[App] Re-extracting for render_1 , current deps: reactive_0 
+List of 3
+ $ type: chr "call"
+ $ fn  : chr "{"
+ $ args:List of 1
+  ..$ :List of 3
+  .. ..$ type: chr "call"
+  .. ..$ fn  : chr "greeting"
+  .. ..$ args: Named list()
+[App] AST structure: 
+[App] Reconstructed expr: {     greeting() } 
+[App] Expr is call? TRUE , call_name: { 
+[App] Extracted deps: reactive_0 
+[App] Updated render_1 deps to: reactive_0 
+[App] Graph after server execution: 3 nodes
+[App] Updated executor's graph reference
+[App] Node IDs: output.greeting, reactive_0, render_1 
+[App] Node 1 : output.greeting - Class: OutputNode, ReactiveNode, R6 
+[App]   Dependencies: render_1 
+[App] Node 2 : reactive_0 - Class: ReactiveExprNode, ReactiveNode, R6 
+[App]   Dependencies: input.name 
+[App] Node 3 : render_1 - Class: RenderNode, ReactiveNode, R6 
+[App]   Output name: greeting 
+[App]   Dependencies: reactive_0 
+Starting hotShiny app at http://127.0.0.1:3838
+Press ESC or Ctrl+C to stop the server
+[Executor] should_execute: node render_1 does NOT need execution
+[Executor] should_execute: node render_1 does NOT need execution
+[WebSocket] Received user_input:  name  =  A 
+[WebSocket] Executor found, calling set_input for name = A 
+[Executor] set_input: input_name= name , value=' A '
+[Executor] set_input: registering input node input.name 
+[Executor] set_input: input node registered, id= input.name 
+[Executor] set_input: updated executor graph reference, now has 4 nodes
+[Executor] set_input: verified input node is in graph
+[Executor] set_input: stored value ' A ' for input.name 
+[Executor] set_input: marked input.name as dirty
+[Executor] set_input: refreshed graph reference before execute(), now has 4 nodes
+[Executor] execute() called
+[Executor] execute() using graph from builder, updated reference
+[Executor] execute() graph has 4 nodes
+[Graph] topological_sort: found 4 nodes
+[Graph] topological_sort: total unique node IDs (from nodes + edges): 4 
+[Graph] topological_sort: processing 3 edges
+[Graph] topological_sort: edge from input.name to reactive_0 
+[Graph] topological_sort: edge from render_1 to output.greeting 
+[Graph] topological_sort: edge from reactive_0 to render_1 
+[Graph] topological_sort: checking 4 node IDs for in-degree 0
+[Graph] topological_sort: node input.name has in-degree 0 
+[Graph] topological_sort: node input.name has in-degree 0, adding to queue
+[Graph] topological_sort: node output.greeting has in-degree 1 
+[Graph] topological_sort: node reactive_0 has in-degree 1 
+[Graph] topological_sort: node render_1 has in-degree 1 
+[Graph] topological_sort: initial queue size: 1 
+[Executor] Execution order: input.name, reactive_0, render_1, output.greeting  (length: 4 )
+[Executor] should_execute: node input.name is dirty
+[Executor] Node input.name type= input , should_execute= TRUE 
+[Executor] Executing node input.name 
+[Executor] execute_node: executing input.name type= input 
+[Executor] execute_node: input node input.name value=' A '
+[Executor] execute_node: stored value ' A ' for input.name 
+[Executor] should_execute: node reactive_0 has dirty dependency input.name 
+[Executor] Node reactive_0 type= reactive , should_execute= TRUE 
+[Executor] Executing node reactive_0 
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, A ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, A ! '
+[Executor] execute_node: stored value ' Hello, A ! ' for reactive_0 
+[Executor] should_execute: node render_1 has dirty dependency reactive_0 
+[Executor] Node render_1 type= render , should_execute= TRUE 
+[Executor] Executing node render_1 
+[Executor] execute_node: executing render_1 type= render 
+[Executor] execute_render: node deps: reactive_0 
+[Executor] should_execute: node reactive_0 is dirty
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, A ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, A ! '
+[Executor] execute_node: stored value ' Hello, A ! ' for reactive_0 
+[Executor] execute_render: added reactive function greeting -> reactive_0 
+[Executor] execute_render: expression string: {     greeting() } 
+[Executor] execute_render: found function calls in expression: greeting 
+[Executor] execute_render: reactive_sources registry has: greeting 
+[Executor] execute_render: function greeting already in eval_env
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_render: input proxy test - input$name = ' A '
+[Executor] execute_render: evaluating expr: {     greeting() } 
+[Executor] execute_render: available functions in eval_env: greeting, input 
+[Executor] should_execute: node reactive_0 is dirty
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, A ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, A ! '
+[Executor] execute_node: stored value ' Hello, A ! ' for reactive_0 
+[Executor] execute_render: result=' Hello, A ! '
+[Executor] execute_node: render node render_1 returned value=' Hello, A ! '
+[Executor] execute_node: stored value ' Hello, A ! ' for render_1 
+[Executor] should_execute: node output.greeting has dirty dependency render_1 
+[Executor] Node output.greeting type= output , should_execute= TRUE 
+[Executor] Executing node output.greeting 
+[Executor] execute_node: executing output.greeting type= output 
+[Executor] execute_node: output node output.greeting value=' NULL '
+[Executor] execute_node: value is NULL for output.greeting , not storing
+[Executor] execute() executed 4 nodes
+[Executor] execute() completed, cleared dirty flags
+[Executor] set_input: execute() completed
+[Executor] send_output_updates: checking 4 nodes
+[Executor] send_output_updates: Found render node render_1 with output_name= greeting 
+[Executor] should_execute: node render_1 does NOT need execution
+[Executor] send_output_updates: node render_1 value=' Hello, A ! '
+[Executor] send_output_updates: sending update for greeting with value=' Hello, A ! ' to 1 connections
+[Executor] send_output_updates: sent message to connection conn_1 
+[Executor] send_output_updates: sent 1 messages total
+[Executor] set_input: send_output_updates() completed
+[WebSocket] executor$set_input completed successfully
+[WebSocket] Received user_input:  name  =  Al 
+[WebSocket] Executor found, calling set_input for name = Al 
+[Executor] set_input: input_name= name , value=' Al '
+[Executor] set_input: input node input.name already exists in graph
+[Executor] set_input: stored value ' Al ' for input.name 
+[Executor] set_input: marked input.name as dirty
+[Executor] set_input: refreshed graph reference before execute(), now has 4 nodes
+[Executor] execute() called
+[Executor] execute() using graph from builder, updated reference
+[Executor] execute() graph has 4 nodes
+[Graph] topological_sort: found 4 nodes
+[Graph] topological_sort: total unique node IDs (from nodes + edges): 4 
+[Graph] topological_sort: processing 3 edges
+[Graph] topological_sort: edge from input.name to reactive_0 
+[Graph] topological_sort: edge from render_1 to output.greeting 
+[Graph] topological_sort: edge from reactive_0 to render_1 
+[Graph] topological_sort: checking 4 node IDs for in-degree 0
+[Graph] topological_sort: node input.name has in-degree 0 
+[Graph] topological_sort: node input.name has in-degree 0, adding to queue
+[Graph] topological_sort: node output.greeting has in-degree 1 
+[Graph] topological_sort: node reactive_0 has in-degree 1 
+[Graph] topological_sort: node render_1 has in-degree 1 
+[Graph] topological_sort: initial queue size: 1 
+[Executor] Execution order: input.name, reactive_0, render_1, output.greeting  (length: 4 )
+[Executor] should_execute: node input.name is dirty
+[Executor] Node input.name type= input , should_execute= TRUE 
+[Executor] Executing node input.name 
+[Executor] execute_node: executing input.name type= input 
+[Executor] execute_node: input node input.name value=' Al '
+[Executor] execute_node: stored value ' Al ' for input.name 
+[Executor] should_execute: node reactive_0 has dirty dependency input.name 
+[Executor] Node reactive_0 type= reactive , should_execute= TRUE 
+[Executor] Executing node reactive_0 
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, Al ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, Al ! '
+[Executor] execute_node: stored value ' Hello, Al ! ' for reactive_0 
+[Executor] should_execute: node render_1 has dirty dependency reactive_0 
+[Executor] Node render_1 type= render , should_execute= TRUE 
+[Executor] Executing node render_1 
+[Executor] execute_node: executing render_1 type= render 
+[Executor] execute_render: node deps: reactive_0 
+[Executor] should_execute: node reactive_0 is dirty
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, Al ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, Al ! '
+[Executor] execute_node: stored value ' Hello, Al ! ' for reactive_0 
+[Executor] execute_render: added reactive function greeting -> reactive_0 
+[Executor] execute_render: expression string: {     greeting() } 
+[Executor] execute_render: found function calls in expression: greeting 
+[Executor] execute_render: reactive_sources registry has: greeting 
+[Executor] execute_render: function greeting already in eval_env
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_render: input proxy test - input$name = ' Al '
+[Executor] execute_render: evaluating expr: {     greeting() } 
+[Executor] execute_render: available functions in eval_env: greeting, input 
+[Executor] should_execute: node reactive_0 is dirty
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, Al ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, Al ! '
+[Executor] execute_node: stored value ' Hello, Al ! ' for reactive_0 
+[Executor] execute_render: result=' Hello, Al ! '
+[Executor] execute_node: render node render_1 returned value=' Hello, Al ! '
+[Executor] execute_node: stored value ' Hello, Al ! ' for render_1 
+[Executor] should_execute: node output.greeting has dirty dependency render_1 
+[Executor] Node output.greeting type= output , should_execute= TRUE 
+[Executor] Executing node output.greeting 
+[Executor] execute_node: executing output.greeting type= output 
+[Executor] execute_node: output node output.greeting value=' NULL '
+[Executor] execute_node: value is NULL for output.greeting , not storing
+[Executor] execute() executed 4 nodes
+[Executor] execute() completed, cleared dirty flags
+[Executor] set_input: execute() completed
+[Executor] send_output_updates: checking 4 nodes
+[Executor] send_output_updates: Found render node render_1 with output_name= greeting 
+[Executor] should_execute: node render_1 does NOT need execution
+[Executor] send_output_updates: node render_1 value=' Hello, Al ! '
+[Executor] send_output_updates: sending update for greeting with value=' Hello, Al ! ' to 1 connections
+[Executor] send_output_updates: sent message to connection conn_1 
+[Executor] send_output_updates: sent 1 messages total
+[Executor] set_input: send_output_updates() completed
+[WebSocket] executor$set_input completed successfully
+[WebSocket] Received user_input:  name  =  Ali 
+[WebSocket] Executor found, calling set_input for name = Ali 
+[Executor] set_input: input_name= name , value=' Ali '
+[Executor] set_input: input node input.name already exists in graph
+[Executor] set_input: stored value ' Ali ' for input.name 
+[Executor] set_input: marked input.name as dirty
+[Executor] set_input: refreshed graph reference before execute(), now has 4 nodes
+[Executor] execute() called
+[Executor] execute() using graph from builder, updated reference
+[Executor] execute() graph has 4 nodes
+[Graph] topological_sort: found 4 nodes
+[Graph] topological_sort: total unique node IDs (from nodes + edges): 4 
+[Graph] topological_sort: processing 3 edges
+[Graph] topological_sort: edge from input.name to reactive_0 
+[Graph] topological_sort: edge from render_1 to output.greeting 
+[Graph] topological_sort: edge from reactive_0 to render_1 
+[Graph] topological_sort: checking 4 node IDs for in-degree 0
+[Graph] topological_sort: node input.name has in-degree 0 
+[Graph] topological_sort: node input.name has in-degree 0, adding to queue
+[Graph] topological_sort: node output.greeting has in-degree 1 
+[Graph] topological_sort: node reactive_0 has in-degree 1 
+[Graph] topological_sort: node render_1 has in-degree 1 
+[Graph] topological_sort: initial queue size: 1 
+[Executor] Execution order: input.name, reactive_0, render_1, output.greeting  (length: 4 )
+[Executor] should_execute: node input.name is dirty
+[Executor] Node input.name type= input , should_execute= TRUE 
+[Executor] Executing node input.name 
+[Executor] execute_node: executing input.name type= input 
+[Executor] execute_node: input node input.name value=' Ali '
+[Executor] execute_node: stored value ' Ali ' for input.name 
+[Executor] should_execute: node reactive_0 has dirty dependency input.name 
+[Executor] Node reactive_0 type= reactive , should_execute= TRUE 
+[Executor] Executing node reactive_0 
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, Ali ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, Ali ! '
+[Executor] execute_node: stored value ' Hello, Ali ! ' for reactive_0 
+[Executor] should_execute: node render_1 has dirty dependency reactive_0 
+[Executor] Node render_1 type= render , should_execute= TRUE 
+[Executor] Executing node render_1 
+[Executor] execute_node: executing render_1 type= render 
+[Executor] execute_render: node deps: reactive_0 
+[Executor] should_execute: node reactive_0 is dirty
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, Ali ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, Ali ! '
+[Executor] execute_node: stored value ' Hello, Ali ! ' for reactive_0 
+[Executor] execute_render: added reactive function greeting -> reactive_0 
+[Executor] execute_render: expression string: {     greeting() } 
+[Executor] execute_render: found function calls in expression: greeting 
+[Executor] execute_render: reactive_sources registry has: greeting 
+[Executor] execute_render: function greeting already in eval_env
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_render: input proxy test - input$name = ' Ali '
+[Executor] execute_render: evaluating expr: {     greeting() } 
+[Executor] execute_render: available functions in eval_env: greeting, input 
+[Executor] should_execute: node reactive_0 is dirty
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, Ali ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, Ali ! '
+[Executor] execute_node: stored value ' Hello, Ali ! ' for reactive_0 
+[Executor] execute_render: result=' Hello, Ali ! '
+[Executor] execute_node: render node render_1 returned value=' Hello, Ali ! '
+[Executor] execute_node: stored value ' Hello, Ali ! ' for render_1 
+[Executor] should_execute: node output.greeting has dirty dependency render_1 
+[Executor] Node output.greeting type= output , should_execute= TRUE 
+[Executor] Executing node output.greeting 
+[Executor] execute_node: executing output.greeting type= output 
+[Executor] execute_node: output node output.greeting value=' NULL '
+[Executor] execute_node: value is NULL for output.greeting , not storing
+[Executor] execute() executed 4 nodes
+[Executor] execute() completed, cleared dirty flags
+[Executor] set_input: execute() completed
+[Executor] send_output_updates: checking 4 nodes
+[Executor] send_output_updates: Found render node render_1 with output_name= greeting 
+[Executor] should_execute: node render_1 does NOT need execution
+[Executor] send_output_updates: node render_1 value=' Hello, Ali ! '
+[Executor] send_output_updates: sending update for greeting with value=' Hello, Ali ! ' to 1 connections
+[Executor] send_output_updates: sent message to connection conn_1 
+[Executor] send_output_updates: sent 1 messages total
+[Executor] set_input: send_output_updates() completed
+[WebSocket] executor$set_input completed successfully
+[WebSocket] Received user_input:  name  =  Alic 
+[WebSocket] Executor found, calling set_input for name = Alic 
+[Executor] set_input: input_name= name , value=' Alic '
+[Executor] set_input: input node input.name already exists in graph
+[Executor] set_input: stored value ' Alic ' for input.name 
+[Executor] set_input: marked input.name as dirty
+[Executor] set_input: refreshed graph reference before execute(), now has 4 nodes
+[Executor] execute() called
+[Executor] execute() using graph from builder, updated reference
+[Executor] execute() graph has 4 nodes
+[Graph] topological_sort: found 4 nodes
+[Graph] topological_sort: total unique node IDs (from nodes + edges): 4 
+[Graph] topological_sort: processing 3 edges
+[Graph] topological_sort: edge from input.name to reactive_0 
+[Graph] topological_sort: edge from render_1 to output.greeting 
+[Graph] topological_sort: edge from reactive_0 to render_1 
+[Graph] topological_sort: checking 4 node IDs for in-degree 0
+[Graph] topological_sort: node input.name has in-degree 0 
+[Graph] topological_sort: node input.name has in-degree 0, adding to queue
+[Graph] topological_sort: node output.greeting has in-degree 1 
+[Graph] topological_sort: node reactive_0 has in-degree 1 
+[Graph] topological_sort: node render_1 has in-degree 1 
+[Graph] topological_sort: initial queue size: 1 
+[Executor] Execution order: input.name, reactive_0, render_1, output.greeting  (length: 4 )
+[Executor] should_execute: node input.name is dirty
+[Executor] Node input.name type= input , should_execute= TRUE 
+[Executor] Executing node input.name 
+[Executor] execute_node: executing input.name type= input 
+[Executor] execute_node: input node input.name value=' Alic '
+[Executor] execute_node: stored value ' Alic ' for input.name 
+[Executor] should_execute: node reactive_0 has dirty dependency input.name 
+[Executor] Node reactive_0 type= reactive , should_execute= TRUE 
+[Executor] Executing node reactive_0 
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, Alic ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, Alic ! '
+[Executor] execute_node: stored value ' Hello, Alic ! ' for reactive_0 
+[Executor] should_execute: node render_1 has dirty dependency reactive_0 
+[Executor] Node render_1 type= render , should_execute= TRUE 
+[Executor] Executing node render_1 
+[Executor] execute_node: executing render_1 type= render 
+[Executor] execute_render: node deps: reactive_0 
+[Executor] should_execute: node reactive_0 is dirty
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, Alic ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, Alic ! '
+[Executor] execute_node: stored value ' Hello, Alic ! ' for reactive_0 
+[Executor] execute_render: added reactive function greeting -> reactive_0 
+[Executor] execute_render: expression string: {     greeting() } 
+[Executor] execute_render: found function calls in expression: greeting 
+[Executor] execute_render: reactive_sources registry has: greeting 
+[Executor] execute_render: function greeting already in eval_env
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_render: input proxy test - input$name = ' Alic '
+[Executor] execute_render: evaluating expr: {     greeting() } 
+[Executor] execute_render: available functions in eval_env: greeting, input 
+[Executor] should_execute: node reactive_0 is dirty
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, Alic ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, Alic ! '
+[Executor] execute_node: stored value ' Hello, Alic ! ' for reactive_0 
+[Executor] execute_render: result=' Hello, Alic ! '
+[Executor] execute_node: render node render_1 returned value=' Hello, Alic ! '
+[Executor] execute_node: stored value ' Hello, Alic ! ' for render_1 
+[Executor] should_execute: node output.greeting has dirty dependency render_1 
+[Executor] Node output.greeting type= output , should_execute= TRUE 
+[Executor] Executing node output.greeting 
+[Executor] execute_node: executing output.greeting type= output 
+[Executor] execute_node: output node output.greeting value=' NULL '
+[Executor] execute_node: value is NULL for output.greeting , not storing
+[Executor] execute() executed 4 nodes
+[Executor] execute() completed, cleared dirty flags
+[Executor] set_input: execute() completed
+[Executor] send_output_updates: checking 4 nodes
+[Executor] send_output_updates: Found render node render_1 with output_name= greeting 
+[Executor] should_execute: node render_1 does NOT need execution
+[Executor] send_output_updates: node render_1 value=' Hello, Alic ! '
+[Executor] send_output_updates: sending update for greeting with value=' Hello, Alic ! ' to 1 connections
+[Executor] send_output_updates: sent message to connection conn_1 
+[Executor] send_output_updates: sent 1 messages total
+[Executor] set_input: send_output_updates() completed
+[WebSocket] executor$set_input completed successfully
+[WebSocket] Received user_input:  name  =  Alice 
+[WebSocket] Executor found, calling set_input for name = Alice 
+[Executor] set_input: input_name= name , value=' Alice '
+[Executor] set_input: input node input.name already exists in graph
+[Executor] set_input: stored value ' Alice ' for input.name 
+[Executor] set_input: marked input.name as dirty
+[Executor] set_input: refreshed graph reference before execute(), now has 4 nodes
+[Executor] execute() called
+[Executor] execute() using graph from builder, updated reference
+[Executor] execute() graph has 4 nodes
+[Graph] topological_sort: found 4 nodes
+[Graph] topological_sort: total unique node IDs (from nodes + edges): 4 
+[Graph] topological_sort: processing 3 edges
+[Graph] topological_sort: edge from input.name to reactive_0 
+[Graph] topological_sort: edge from render_1 to output.greeting 
+[Graph] topological_sort: edge from reactive_0 to render_1 
+[Graph] topological_sort: checking 4 node IDs for in-degree 0
+[Graph] topological_sort: node input.name has in-degree 0 
+[Graph] topological_sort: node input.name has in-degree 0, adding to queue
+[Graph] topological_sort: node output.greeting has in-degree 1 
+[Graph] topological_sort: node reactive_0 has in-degree 1 
+[Graph] topological_sort: node render_1 has in-degree 1 
+[Graph] topological_sort: initial queue size: 1 
+[Executor] Execution order: input.name, reactive_0, render_1, output.greeting  (length: 4 )
+[Executor] should_execute: node input.name is dirty
+[Executor] Node input.name type= input , should_execute= TRUE 
+[Executor] Executing node input.name 
+[Executor] execute_node: executing input.name type= input 
+[Executor] execute_node: input node input.name value=' Alice '
+[Executor] execute_node: stored value ' Alice ' for input.name 
+[Executor] should_execute: node reactive_0 has dirty dependency input.name 
+[Executor] Node reactive_0 type= reactive , should_execute= TRUE 
+[Executor] Executing node reactive_0 
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, Alice ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, Alice ! '
+[Executor] execute_node: stored value ' Hello, Alice ! ' for reactive_0 
+[Executor] should_execute: node render_1 has dirty dependency reactive_0 
+[Executor] Node render_1 type= render , should_execute= TRUE 
+[Executor] Executing node render_1 
+[Executor] execute_node: executing render_1 type= render 
+[Executor] execute_render: node deps: reactive_0 
+[Executor] should_execute: node reactive_0 is dirty
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, Alice ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, Alice ! '
+[Executor] execute_node: stored value ' Hello, Alice ! ' for reactive_0 
+[Executor] execute_render: added reactive function greeting -> reactive_0 
+[Executor] execute_render: expression string: {     greeting() } 
+[Executor] execute_render: found function calls in expression: greeting 
+[Executor] execute_render: reactive_sources registry has: greeting 
+[Executor] execute_render: function greeting already in eval_env
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_render: input proxy test - input$name = ' Alice '
+[Executor] execute_render: evaluating expr: {     greeting() } 
+[Executor] execute_render: available functions in eval_env: greeting, input 
+[Executor] should_execute: node reactive_0 is dirty
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, Alice ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, Alice ! '
+[Executor] execute_node: stored value ' Hello, Alice ! ' for reactive_0 
+[Executor] execute_render: result=' Hello, Alice ! '
+[Executor] execute_node: render node render_1 returned value=' Hello, Alice ! '
+[Executor] execute_node: stored value ' Hello, Alice ! ' for render_1 
+[Executor] should_execute: node output.greeting has dirty dependency render_1 
+[Executor] Node output.greeting type= output , should_execute= TRUE 
+[Executor] Executing node output.greeting 
+[Executor] execute_node: executing output.greeting type= output 
+[Executor] execute_node: output node output.greeting value=' NULL '
+[Executor] execute_node: value is NULL for output.greeting , not storing
+[Executor] execute() executed 4 nodes
+[Executor] execute() completed, cleared dirty flags
+[Executor] set_input: execute() completed
+[Executor] send_output_updates: checking 4 nodes
+[Executor] send_output_updates: Found render node render_1 with output_name= greeting 
+[Executor] should_execute: node render_1 does NOT need execution
+[Executor] send_output_updates: node render_1 value=' Hello, Alice ! '
+[Executor] send_output_updates: sending update for greeting with value=' Hello, Alice ! ' to 1 connections
+[Executor] send_output_updates: sent message to connection conn_1 
+[Executor] send_output_updates: sent 1 messages total
+[Executor] set_input: send_output_updates() completed
+[WebSocket] executor$set_input completed successfully
+[Executor] should_execute: node render_1 does NOT need execution
+[WebSocket] Received user_input:  name  =  B 
+[WebSocket] Executor found, calling set_input for name = B 
+[Executor] set_input: input_name= name , value=' B '
+[Executor] set_input: input node input.name already exists in graph
+[Executor] set_input: stored value ' B ' for input.name 
+[Executor] set_input: marked input.name as dirty
+[Executor] set_input: refreshed graph reference before execute(), now has 4 nodes
+[Executor] execute() called
+[Executor] execute() using graph from builder, updated reference
+[Executor] execute() graph has 4 nodes
+[Graph] topological_sort: found 4 nodes
+[Graph] topological_sort: total unique node IDs (from nodes + edges): 4 
+[Graph] topological_sort: processing 3 edges
+[Graph] topological_sort: edge from input.name to reactive_0 
+[Graph] topological_sort: edge from render_1 to output.greeting 
+[Graph] topological_sort: edge from reactive_0 to render_1 
+[Graph] topological_sort: checking 4 node IDs for in-degree 0
+[Graph] topological_sort: node input.name has in-degree 0 
+[Graph] topological_sort: node input.name has in-degree 0, adding to queue
+[Graph] topological_sort: node output.greeting has in-degree 1 
+[Graph] topological_sort: node reactive_0 has in-degree 1 
+[Graph] topological_sort: node render_1 has in-degree 1 
+[Graph] topological_sort: initial queue size: 1 
+[Executor] Execution order: input.name, reactive_0, render_1, output.greeting  (length: 4 )
+[Executor] should_execute: node input.name is dirty
+[Executor] Node input.name type= input , should_execute= TRUE 
+[Executor] Executing node input.name 
+[Executor] execute_node: executing input.name type= input 
+[Executor] execute_node: input node input.name value=' B '
+[Executor] execute_node: stored value ' B ' for input.name 
+[Executor] should_execute: node reactive_0 has dirty dependency input.name 
+[Executor] Node reactive_0 type= reactive , should_execute= TRUE 
+[Executor] Executing node reactive_0 
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, B ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, B ! '
+[Executor] execute_node: stored value ' Hello, B ! ' for reactive_0 
+[Executor] should_execute: node render_1 has dirty dependency reactive_0 
+[Executor] Node render_1 type= render , should_execute= TRUE 
+[Executor] Executing node render_1 
+[Executor] execute_node: executing render_1 type= render 
+[Executor] execute_render: node deps: reactive_0 
+[Executor] should_execute: node reactive_0 is dirty
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, B ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, B ! '
+[Executor] execute_node: stored value ' Hello, B ! ' for reactive_0 
+[Executor] execute_render: added reactive function greeting -> reactive_0 
+[Executor] execute_render: expression string: {     greeting() } 
+[Executor] execute_render: found function calls in expression: greeting 
+[Executor] execute_render: reactive_sources registry has: greeting 
+[Executor] execute_render: function greeting already in eval_env
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_render: input proxy test - input$name = ' B '
+[Executor] execute_render: evaluating expr: {     greeting() } 
+[Executor] execute_render: available functions in eval_env: greeting, input 
+[Executor] should_execute: node reactive_0 is dirty
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, B ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, B ! '
+[Executor] execute_node: stored value ' Hello, B ! ' for reactive_0 
+[Executor] execute_render: result=' Hello, B ! '
+[Executor] execute_node: render node render_1 returned value=' Hello, B ! '
+[Executor] execute_node: stored value ' Hello, B ! ' for render_1 
+[Executor] should_execute: node output.greeting has dirty dependency render_1 
+[Executor] Node output.greeting type= output , should_execute= TRUE 
+[Executor] Executing node output.greeting 
+[Executor] execute_node: executing output.greeting type= output 
+[Executor] execute_node: output node output.greeting value=' NULL '
+[Executor] execute_node: value is NULL for output.greeting , not storing
+[Executor] execute() executed 4 nodes
+[Executor] execute() completed, cleared dirty flags
+[Executor] set_input: execute() completed
+[Executor] send_output_updates: checking 4 nodes
+[Executor] send_output_updates: Found render node render_1 with output_name= greeting 
+[Executor] should_execute: node render_1 does NOT need execution
+[Executor] send_output_updates: node render_1 value=' Hello, B ! '
+[Executor] send_output_updates: sending update for greeting with value=' Hello, B ! ' to 1 connections
+[Executor] send_output_updates: sent message to connection conn_1 
+[Executor] send_output_updates: sent 1 messages total
+[Executor] set_input: send_output_updates() completed
+[WebSocket] executor$set_input completed successfully
+[WebSocket] Received user_input:  name  =  Bo 
+[WebSocket] Executor found, calling set_input for name = Bo 
+[Executor] set_input: input_name= name , value=' Bo '
+[Executor] set_input: input node input.name already exists in graph
+[Executor] set_input: stored value ' Bo ' for input.name 
+[Executor] set_input: marked input.name as dirty
+[Executor] set_input: refreshed graph reference before execute(), now has 4 nodes
+[Executor] execute() called
+[Executor] execute() using graph from builder, updated reference
+[Executor] execute() graph has 4 nodes
+[Graph] topological_sort: found 4 nodes
+[Graph] topological_sort: total unique node IDs (from nodes + edges): 4 
+[Graph] topological_sort: processing 3 edges
+[Graph] topological_sort: edge from input.name to reactive_0 
+[Graph] topological_sort: edge from render_1 to output.greeting 
+[Graph] topological_sort: edge from reactive_0 to render_1 
+[Graph] topological_sort: checking 4 node IDs for in-degree 0
+[Graph] topological_sort: node input.name has in-degree 0 
+[Graph] topological_sort: node input.name has in-degree 0, adding to queue
+[Graph] topological_sort: node output.greeting has in-degree 1 
+[Graph] topological_sort: node reactive_0 has in-degree 1 
+[Graph] topological_sort: node render_1 has in-degree 1 
+[Graph] topological_sort: initial queue size: 1 
+[Executor] Execution order: input.name, reactive_0, render_1, output.greeting  (length: 4 )
+[Executor] should_execute: node input.name is dirty
+[Executor] Node input.name type= input , should_execute= TRUE 
+[Executor] Executing node input.name 
+[Executor] execute_node: executing input.name type= input 
+[Executor] execute_node: input node input.name value=' Bo '
+[Executor] execute_node: stored value ' Bo ' for input.name 
+[Executor] should_execute: node reactive_0 has dirty dependency input.name 
+[Executor] Node reactive_0 type= reactive , should_execute= TRUE 
+[Executor] Executing node reactive_0 
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, Bo ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, Bo ! '
+[Executor] execute_node: stored value ' Hello, Bo ! ' for reactive_0 
+[Executor] should_execute: node render_1 has dirty dependency reactive_0 
+[Executor] Node render_1 type= render , should_execute= TRUE 
+[Executor] Executing node render_1 
+[Executor] execute_node: executing render_1 type= render 
+[Executor] execute_render: node deps: reactive_0 
+[Executor] should_execute: node reactive_0 is dirty
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, Bo ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, Bo ! '
+[Executor] execute_node: stored value ' Hello, Bo ! ' for reactive_0 
+[Executor] execute_render: added reactive function greeting -> reactive_0 
+[Executor] execute_render: expression string: {     greeting() } 
+[Executor] execute_render: found function calls in expression: greeting 
+[Executor] execute_render: reactive_sources registry has: greeting 
+[Executor] execute_render: function greeting already in eval_env
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_render: input proxy test - input$name = ' Bo '
+[Executor] execute_render: evaluating expr: {     greeting() } 
+[Executor] execute_render: available functions in eval_env: greeting, input 
+[Executor] should_execute: node reactive_0 is dirty
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, Bo ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, Bo ! '
+[Executor] execute_node: stored value ' Hello, Bo ! ' for reactive_0 
+[Executor] execute_render: result=' Hello, Bo ! '
+[Executor] execute_node: render node render_1 returned value=' Hello, Bo ! '
+[Executor] execute_node: stored value ' Hello, Bo ! ' for render_1 
+[Executor] should_execute: node output.greeting has dirty dependency render_1 
+[Executor] Node output.greeting type= output , should_execute= TRUE 
+[Executor] Executing node output.greeting 
+[Executor] execute_node: executing output.greeting type= output 
+[Executor] execute_node: output node output.greeting value=' NULL '
+[Executor] execute_node: value is NULL for output.greeting , not storing
+[Executor] execute() executed 4 nodes
+[Executor] execute() completed, cleared dirty flags
+[Executor] set_input: execute() completed
+[Executor] send_output_updates: checking 4 nodes
+[Executor] send_output_updates: Found render node render_1 with output_name= greeting 
+[Executor] should_execute: node render_1 does NOT need execution
+[Executor] send_output_updates: node render_1 value=' Hello, Bo ! '
+[Executor] send_output_updates: sending update for greeting with value=' Hello, Bo ! ' to 1 connections
+[Executor] send_output_updates: sent message to connection conn_1 
+[Executor] send_output_updates: sent 1 messages total
+[Executor] set_input: send_output_updates() completed
+[WebSocket] executor$set_input completed successfully
+[WebSocket] Received user_input:  name  =  Bob 
+[WebSocket] Executor found, calling set_input for name = Bob 
+[Executor] set_input: input_name= name , value=' Bob '
+[Executor] set_input: input node input.name already exists in graph
+[Executor] set_input: stored value ' Bob ' for input.name 
+[Executor] set_input: marked input.name as dirty
+[Executor] set_input: refreshed graph reference before execute(), now has 4 nodes
+[Executor] execute() called
+[Executor] execute() using graph from builder, updated reference
+[Executor] execute() graph has 4 nodes
+[Graph] topological_sort: found 4 nodes
+[Graph] topological_sort: total unique node IDs (from nodes + edges): 4 
+[Graph] topological_sort: processing 3 edges
+[Graph] topological_sort: edge from input.name to reactive_0 
+[Graph] topological_sort: edge from render_1 to output.greeting 
+[Graph] topological_sort: edge from reactive_0 to render_1 
+[Graph] topological_sort: checking 4 node IDs for in-degree 0
+[Graph] topological_sort: node input.name has in-degree 0 
+[Graph] topological_sort: node input.name has in-degree 0, adding to queue
+[Graph] topological_sort: node output.greeting has in-degree 1 
+[Graph] topological_sort: node reactive_0 has in-degree 1 
+[Graph] topological_sort: node render_1 has in-degree 1 
+[Graph] topological_sort: initial queue size: 1 
+[Executor] Execution order: input.name, reactive_0, render_1, output.greeting  (length: 4 )
+[Executor] should_execute: node input.name is dirty
+[Executor] Node input.name type= input , should_execute= TRUE 
+[Executor] Executing node input.name 
+[Executor] execute_node: executing input.name type= input 
+[Executor] execute_node: input node input.name value=' Bob '
+[Executor] execute_node: stored value ' Bob ' for input.name 
+[Executor] should_execute: node reactive_0 has dirty dependency input.name 
+[Executor] Node reactive_0 type= reactive , should_execute= TRUE 
+[Executor] Executing node reactive_0 
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, Bob ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, Bob ! '
+[Executor] execute_node: stored value ' Hello, Bob ! ' for reactive_0 
+[Executor] should_execute: node render_1 has dirty dependency reactive_0 
+[Executor] Node render_1 type= render , should_execute= TRUE 
+[Executor] Executing node render_1 
+[Executor] execute_node: executing render_1 type= render 
+[Executor] execute_render: node deps: reactive_0 
+[Executor] should_execute: node reactive_0 is dirty
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, Bob ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, Bob ! '
+[Executor] execute_node: stored value ' Hello, Bob ! ' for reactive_0 
+[Executor] execute_render: added reactive function greeting -> reactive_0 
+[Executor] execute_render: expression string: {     greeting() } 
+[Executor] execute_render: found function calls in expression: greeting 
+[Executor] execute_render: reactive_sources registry has: greeting 
+[Executor] execute_render: function greeting already in eval_env
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_render: input proxy test - input$name = ' Bob '
+[Executor] execute_render: evaluating expr: {     greeting() } 
+[Executor] execute_render: available functions in eval_env: greeting, input 
+[Executor] should_execute: node reactive_0 is dirty
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, Bob ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, Bob ! '
+[Executor] execute_node: stored value ' Hello, Bob ! ' for reactive_0 
+[Executor] execute_render: result=' Hello, Bob ! '
+[Executor] execute_node: render node render_1 returned value=' Hello, Bob ! '
+[Executor] execute_node: stored value ' Hello, Bob ! ' for render_1 
+[Executor] should_execute: node output.greeting has dirty dependency render_1 
+[Executor] Node output.greeting type= output , should_execute= TRUE 
+[Executor] Executing node output.greeting 
+[Executor] execute_node: executing output.greeting type= output 
+[Executor] execute_node: output node output.greeting value=' NULL '
+[Executor] execute_node: value is NULL for output.greeting , not storing
+[Executor] execute() executed 4 nodes
+[Executor] execute() completed, cleared dirty flags
+[Executor] set_input: execute() completed
+[Executor] send_output_updates: checking 4 nodes
+[Executor] send_output_updates: Found render node render_1 with output_name= greeting 
+[Executor] should_execute: node render_1 does NOT need execution
+[Executor] send_output_updates: node render_1 value=' Hello, Bob ! '
+[Executor] send_output_updates: sending update for greeting with value=' Hello, Bob ! ' to 1 connections
+[Executor] send_output_updates: sent message to connection conn_1 
+[Executor] send_output_updates: sent 1 messages total
+[Executor] set_input: send_output_updates() completed
+[WebSocket] executor$set_input completed successfully
+[Executor] should_execute: node render_1 does NOT need execution
+[WebSocket] Received user_input:  name  =  T 
+[WebSocket] Executor found, calling set_input for name = T 
+[Executor] set_input: input_name= name , value=' T '
+[Executor] set_input: input node input.name already exists in graph
+[Executor] set_input: stored value ' T ' for input.name 
+[Executor] set_input: marked input.name as dirty
+[Executor] set_input: refreshed graph reference before execute(), now has 4 nodes
+[Executor] execute() called
+[Executor] execute() using graph from builder, updated reference
+[Executor] execute() graph has 4 nodes
+[Graph] topological_sort: found 4 nodes
+[Graph] topological_sort: total unique node IDs (from nodes + edges): 4 
+[Graph] topological_sort: processing 3 edges
+[Graph] topological_sort: edge from input.name to reactive_0 
+[Graph] topological_sort: edge from render_1 to output.greeting 
+[Graph] topological_sort: edge from reactive_0 to render_1 
+[Graph] topological_sort: checking 4 node IDs for in-degree 0
+[Graph] topological_sort: node input.name has in-degree 0 
+[Graph] topological_sort: node input.name has in-degree 0, adding to queue
+[Graph] topological_sort: node output.greeting has in-degree 1 
+[Graph] topological_sort: node reactive_0 has in-degree 1 
+[Graph] topological_sort: node render_1 has in-degree 1 
+[Graph] topological_sort: initial queue size: 1 
+[Executor] Execution order: input.name, reactive_0, render_1, output.greeting  (length: 4 )
+[Executor] should_execute: node input.name is dirty
+[Executor] Node input.name type= input , should_execute= TRUE 
+[Executor] Executing node input.name 
+[Executor] execute_node: executing input.name type= input 
+[Executor] execute_node: input node input.name value=' T '
+[Executor] execute_node: stored value ' T ' for input.name 
+[Executor] should_execute: node reactive_0 has dirty dependency input.name 
+[Executor] Node reactive_0 type= reactive , should_execute= TRUE 
+[Executor] Executing node reactive_0 
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, T ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, T ! '
+[Executor] execute_node: stored value ' Hello, T ! ' for reactive_0 
+[Executor] should_execute: node render_1 has dirty dependency reactive_0 
+[Executor] Node render_1 type= render , should_execute= TRUE 
+[Executor] Executing node render_1 
+[Executor] execute_node: executing render_1 type= render 
+[Executor] execute_render: node deps: reactive_0 
+[Executor] should_execute: node reactive_0 is dirty
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, T ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, T ! '
+[Executor] execute_node: stored value ' Hello, T ! ' for reactive_0 
+[Executor] execute_render: added reactive function greeting -> reactive_0 
+[Executor] execute_render: expression string: {     greeting() } 
+[Executor] execute_render: found function calls in expression: greeting 
+[Executor] execute_render: reactive_sources registry has: greeting 
+[Executor] execute_render: function greeting already in eval_env
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_render: input proxy test - input$name = ' T '
+[Executor] execute_render: evaluating expr: {     greeting() } 
+[Executor] execute_render: available functions in eval_env: greeting, input 
+[Executor] should_execute: node reactive_0 is dirty
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, T ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, T ! '
+[Executor] execute_node: stored value ' Hello, T ! ' for reactive_0 
+[Executor] execute_render: result=' Hello, T ! '
+[Executor] execute_node: render node render_1 returned value=' Hello, T ! '
+[Executor] execute_node: stored value ' Hello, T ! ' for render_1 
+[Executor] should_execute: node output.greeting has dirty dependency render_1 
+[Executor] Node output.greeting type= output , should_execute= TRUE 
+[Executor] Executing node output.greeting 
+[Executor] execute_node: executing output.greeting type= output 
+[Executor] execute_node: output node output.greeting value=' NULL '
+[Executor] execute_node: value is NULL for output.greeting , not storing
+[Executor] execute() executed 4 nodes
+[Executor] execute() completed, cleared dirty flags
+[Executor] set_input: execute() completed
+[Executor] send_output_updates: checking 4 nodes
+[Executor] send_output_updates: Found render node render_1 with output_name= greeting 
+[Executor] should_execute: node render_1 does NOT need execution
+[Executor] send_output_updates: node render_1 value=' Hello, T ! '
+[Executor] send_output_updates: sending update for greeting with value=' Hello, T ! ' to 1 connections
+[Executor] send_output_updates: sent message to connection conn_1 
+[Executor] send_output_updates: sent 1 messages total
+[Executor] set_input: send_output_updates() completed
+[WebSocket] executor$set_input completed successfully
+[WebSocket] Received user_input:  name  =  Te 
+[WebSocket] Executor found, calling set_input for name = Te 
+[Executor] set_input: input_name= name , value=' Te '
+[Executor] set_input: input node input.name already exists in graph
+[Executor] set_input: stored value ' Te ' for input.name 
+[Executor] set_input: marked input.name as dirty
+[Executor] set_input: refreshed graph reference before execute(), now has 4 nodes
+[Executor] execute() called
+[Executor] execute() using graph from builder, updated reference
+[Executor] execute() graph has 4 nodes
+[Graph] topological_sort: found 4 nodes
+[Graph] topological_sort: total unique node IDs (from nodes + edges): 4 
+[Graph] topological_sort: processing 3 edges
+[Graph] topological_sort: edge from input.name to reactive_0 
+[Graph] topological_sort: edge from render_1 to output.greeting 
+[Graph] topological_sort: edge from reactive_0 to render_1 
+[Graph] topological_sort: checking 4 node IDs for in-degree 0
+[Graph] topological_sort: node input.name has in-degree 0 
+[Graph] topological_sort: node input.name has in-degree 0, adding to queue
+[Graph] topological_sort: node output.greeting has in-degree 1 
+[Graph] topological_sort: node reactive_0 has in-degree 1 
+[Graph] topological_sort: node render_1 has in-degree 1 
+[Graph] topological_sort: initial queue size: 1 
+[Executor] Execution order: input.name, reactive_0, render_1, output.greeting  (length: 4 )
+[Executor] should_execute: node input.name is dirty
+[Executor] Node input.name type= input , should_execute= TRUE 
+[Executor] Executing node input.name 
+[Executor] execute_node: executing input.name type= input 
+[Executor] execute_node: input node input.name value=' Te '
+[Executor] execute_node: stored value ' Te ' for input.name 
+[Executor] should_execute: node reactive_0 has dirty dependency input.name 
+[Executor] Node reactive_0 type= reactive , should_execute= TRUE 
+[Executor] Executing node reactive_0 
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, Te ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, Te ! '
+[Executor] execute_node: stored value ' Hello, Te ! ' for reactive_0 
+[Executor] should_execute: node render_1 has dirty dependency reactive_0 
+[Executor] Node render_1 type= render , should_execute= TRUE 
+[Executor] Executing node render_1 
+[Executor] execute_node: executing render_1 type= render 
+[Executor] execute_render: node deps: reactive_0 
+[Executor] should_execute: node reactive_0 is dirty
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, Te ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, Te ! '
+[Executor] execute_node: stored value ' Hello, Te ! ' for reactive_0 
+[Executor] execute_render: added reactive function greeting -> reactive_0 
+[Executor] execute_render: expression string: {     greeting() } 
+[Executor] execute_render: found function calls in expression: greeting 
+[Executor] execute_render: reactive_sources registry has: greeting 
+[Executor] execute_render: function greeting already in eval_env
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_render: input proxy test - input$name = ' Te '
+[Executor] execute_render: evaluating expr: {     greeting() } 
+[Executor] execute_render: available functions in eval_env: greeting, input 
+[Executor] should_execute: node reactive_0 is dirty
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, Te ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, Te ! '
+[Executor] execute_node: stored value ' Hello, Te ! ' for reactive_0 
+[Executor] execute_render: result=' Hello, Te ! '
+[Executor] execute_node: render node render_1 returned value=' Hello, Te ! '
+[Executor] execute_node: stored value ' Hello, Te ! ' for render_1 
+[Executor] should_execute: node output.greeting has dirty dependency render_1 
+[Executor] Node output.greeting type= output , should_execute= TRUE 
+[Executor] Executing node output.greeting 
+[Executor] execute_node: executing output.greeting type= output 
+[Executor] execute_node: output node output.greeting value=' NULL '
+[Executor] execute_node: value is NULL for output.greeting , not storing
+[Executor] execute() executed 4 nodes
+[Executor] execute() completed, cleared dirty flags
+[Executor] set_input: execute() completed
+[Executor] send_output_updates: checking 4 nodes
+[Executor] send_output_updates: Found render node render_1 with output_name= greeting 
+[Executor] should_execute: node render_1 does NOT need execution
+[Executor] send_output_updates: node render_1 value=' Hello, Te ! '
+[Executor] send_output_updates: sending update for greeting with value=' Hello, Te ! ' to 1 connections
+[Executor] send_output_updates: sent message to connection conn_1 
+[Executor] send_output_updates: sent 1 messages total
+[Executor] set_input: send_output_updates() completed
+[WebSocket] executor$set_input completed successfully
+[WebSocket] Received user_input:  name  =  Tes 
+[WebSocket] Executor found, calling set_input for name = Tes 
+[Executor] set_input: input_name= name , value=' Tes '
+[Executor] set_input: input node input.name already exists in graph
+[Executor] set_input: stored value ' Tes ' for input.name 
+[Executor] set_input: marked input.name as dirty
+[Executor] set_input: refreshed graph reference before execute(), now has 4 nodes
+[Executor] execute() called
+[Executor] execute() using graph from builder, updated reference
+[Executor] execute() graph has 4 nodes
+[Graph] topological_sort: found 4 nodes
+[Graph] topological_sort: total unique node IDs (from nodes + edges): 4 
+[Graph] topological_sort: processing 3 edges
+[Graph] topological_sort: edge from input.name to reactive_0 
+[Graph] topological_sort: edge from render_1 to output.greeting 
+[Graph] topological_sort: edge from reactive_0 to render_1 
+[Graph] topological_sort: checking 4 node IDs for in-degree 0
+[Graph] topological_sort: node input.name has in-degree 0 
+[Graph] topological_sort: node input.name has in-degree 0, adding to queue
+[Graph] topological_sort: node output.greeting has in-degree 1 
+[Graph] topological_sort: node reactive_0 has in-degree 1 
+[Graph] topological_sort: node render_1 has in-degree 1 
+[Graph] topological_sort: initial queue size: 1 
+[Executor] Execution order: input.name, reactive_0, render_1, output.greeting  (length: 4 )
+[Executor] should_execute: node input.name is dirty
+[Executor] Node input.name type= input , should_execute= TRUE 
+[Executor] Executing node input.name 
+[Executor] execute_node: executing input.name type= input 
+[Executor] execute_node: input node input.name value=' Tes '
+[Executor] execute_node: stored value ' Tes ' for input.name 
+[Executor] should_execute: node reactive_0 has dirty dependency input.name 
+[Executor] Node reactive_0 type= reactive , should_execute= TRUE 
+[Executor] Executing node reactive_0 
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, Tes ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, Tes ! '
+[Executor] execute_node: stored value ' Hello, Tes ! ' for reactive_0 
+[Executor] should_execute: node render_1 has dirty dependency reactive_0 
+[Executor] Node render_1 type= render , should_execute= TRUE 
+[Executor] Executing node render_1 
+[Executor] execute_node: executing render_1 type= render 
+[Executor] execute_render: node deps: reactive_0 
+[Executor] should_execute: node reactive_0 is dirty
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, Tes ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, Tes ! '
+[Executor] execute_node: stored value ' Hello, Tes ! ' for reactive_0 
+[Executor] execute_render: added reactive function greeting -> reactive_0 
+[Executor] execute_render: expression string: {     greeting() } 
+[Executor] execute_render: found function calls in expression: greeting 
+[Executor] execute_render: reactive_sources registry has: greeting 
+[Executor] execute_render: function greeting already in eval_env
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_render: input proxy test - input$name = ' Tes '
+[Executor] execute_render: evaluating expr: {     greeting() } 
+[Executor] execute_render: available functions in eval_env: greeting, input 
+[Executor] should_execute: node reactive_0 is dirty
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, Tes ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, Tes ! '
+[Executor] execute_node: stored value ' Hello, Tes ! ' for reactive_0 
+[Executor] execute_render: result=' Hello, Tes ! '
+[Executor] execute_node: render node render_1 returned value=' Hello, Tes ! '
+[Executor] execute_node: stored value ' Hello, Tes ! ' for render_1 
+[Executor] should_execute: node output.greeting has dirty dependency render_1 
+[Executor] Node output.greeting type= output , should_execute= TRUE 
+[Executor] Executing node output.greeting 
+[Executor] execute_node: executing output.greeting type= output 
+[Executor] execute_node: output node output.greeting value=' NULL '
+[Executor] execute_node: value is NULL for output.greeting , not storing
+[Executor] execute() executed 4 nodes
+[Executor] execute() completed, cleared dirty flags
+[Executor] set_input: execute() completed
+[Executor] send_output_updates: checking 4 nodes
+[Executor] send_output_updates: Found render node render_1 with output_name= greeting 
+[Executor] should_execute: node render_1 does NOT need execution
+[Executor] send_output_updates: node render_1 value=' Hello, Tes ! '
+[Executor] send_output_updates: sending update for greeting with value=' Hello, Tes ! ' to 1 connections
+[Executor] send_output_updates: sent message to connection conn_1 
+[Executor] send_output_updates: sent 1 messages total
+[Executor] set_input: send_output_updates() completed
+[WebSocket] executor$set_input completed successfully
+[WebSocket] Received user_input:  name  =  Test 
+[WebSocket] Executor found, calling set_input for name = Test 
+[Executor] set_input: input_name= name , value=' Test '
+[Executor] set_input: input node input.name already exists in graph
+[Executor] set_input: stored value ' Test ' for input.name 
+[Executor] set_input: marked input.name as dirty
+[Executor] set_input: refreshed graph reference before execute(), now has 4 nodes
+[Executor] execute() called
+[Executor] execute() using graph from builder, updated reference
+[Executor] execute() graph has 4 nodes
+[Graph] topological_sort: found 4 nodes
+[Graph] topological_sort: total unique node IDs (from nodes + edges): 4 
+[Graph] topological_sort: processing 3 edges
+[Graph] topological_sort: edge from input.name to reactive_0 
+[Graph] topological_sort: edge from render_1 to output.greeting 
+[Graph] topological_sort: edge from reactive_0 to render_1 
+[Graph] topological_sort: checking 4 node IDs for in-degree 0
+[Graph] topological_sort: node input.name has in-degree 0 
+[Graph] topological_sort: node input.name has in-degree 0, adding to queue
+[Graph] topological_sort: node output.greeting has in-degree 1 
+[Graph] topological_sort: node reactive_0 has in-degree 1 
+[Graph] topological_sort: node render_1 has in-degree 1 
+[Graph] topological_sort: initial queue size: 1 
+[Executor] Execution order: input.name, reactive_0, render_1, output.greeting  (length: 4 )
+[Executor] should_execute: node input.name is dirty
+[Executor] Node input.name type= input , should_execute= TRUE 
+[Executor] Executing node input.name 
+[Executor] execute_node: executing input.name type= input 
+[Executor] execute_node: input node input.name value=' Test '
+[Executor] execute_node: stored value ' Test ' for input.name 
+[Executor] should_execute: node reactive_0 has dirty dependency input.name 
+[Executor] Node reactive_0 type= reactive , should_execute= TRUE 
+[Executor] Executing node reactive_0 
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, Test ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, Test ! '
+[Executor] execute_node: stored value ' Hello, Test ! ' for reactive_0 
+[Executor] should_execute: node render_1 has dirty dependency reactive_0 
+[Executor] Node render_1 type= render , should_execute= TRUE 
+[Executor] Executing node render_1 
+[Executor] execute_node: executing render_1 type= render 
+[Executor] execute_render: node deps: reactive_0 
+[Executor] should_execute: node reactive_0 is dirty
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, Test ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, Test ! '
+[Executor] execute_node: stored value ' Hello, Test ! ' for reactive_0 
+[Executor] execute_render: added reactive function greeting -> reactive_0 
+[Executor] execute_render: expression string: {     greeting() } 
+[Executor] execute_render: found function calls in expression: greeting 
+[Executor] execute_render: reactive_sources registry has: greeting 
+[Executor] execute_render: function greeting already in eval_env
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_render: input proxy test - input$name = ' Test '
+[Executor] execute_render: evaluating expr: {     greeting() } 
+[Executor] execute_render: available functions in eval_env: greeting, input 
+[Executor] should_execute: node reactive_0 is dirty
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, Test ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, Test ! '
+[Executor] execute_node: stored value ' Hello, Test ! ' for reactive_0 
+[Executor] execute_render: result=' Hello, Test ! '
+[Executor] execute_node: render node render_1 returned value=' Hello, Test ! '
+[Executor] execute_node: stored value ' Hello, Test ! ' for render_1 
+[Executor] should_execute: node output.greeting has dirty dependency render_1 
+[Executor] Node output.greeting type= output , should_execute= TRUE 
+[Executor] Executing node output.greeting 
+[Executor] execute_node: executing output.greeting type= output 
+[Executor] execute_node: output node output.greeting value=' NULL '
+[Executor] execute_node: value is NULL for output.greeting , not storing
+[Executor] execute() executed 4 nodes
+[Executor] execute() completed, cleared dirty flags
+[Executor] set_input: execute() completed
+[Executor] send_output_updates: checking 4 nodes
+[Executor] send_output_updates: Found render node render_1 with output_name= greeting 
+[Executor] should_execute: node render_1 does NOT need execution
+[Executor] send_output_updates: node render_1 value=' Hello, Test ! '
+[Executor] send_output_updates: sending update for greeting with value=' Hello, Test ! ' to 1 connections
+[Executor] send_output_updates: sent message to connection conn_1 
+[Executor] send_output_updates: sent 1 messages total
+[Executor] set_input: send_output_updates() completed
+[WebSocket] executor$set_input completed successfully
+[WebSocket] Received user_input:  name  =  Test  
+[WebSocket] Executor found, calling set_input for name = Test  
+[Executor] set_input: input_name= name , value=' Test  '
+[Executor] set_input: input node input.name already exists in graph
+[Executor] set_input: stored value ' Test ' for input.name 
+[Executor] set_input: marked input.name as dirty
+[Executor] set_input: refreshed graph reference before execute(), now has 4 nodes
+[Executor] execute() called
+[Executor] execute() using graph from builder, updated reference
+[Executor] execute() graph has 4 nodes
+[Graph] topological_sort: found 4 nodes
+[Graph] topological_sort: total unique node IDs (from nodes + edges): 4 
+[Graph] topological_sort: processing 3 edges
+[Graph] topological_sort: edge from input.name to reactive_0 
+[Graph] topological_sort: edge from render_1 to output.greeting 
+[Graph] topological_sort: edge from reactive_0 to render_1 
+[Graph] topological_sort: checking 4 node IDs for in-degree 0
+[Graph] topological_sort: node input.name has in-degree 0 
+[Graph] topological_sort: node input.name has in-degree 0, adding to queue
+[Graph] topological_sort: node output.greeting has in-degree 1 
+[Graph] topological_sort: node reactive_0 has in-degree 1 
+[Graph] topological_sort: node render_1 has in-degree 1 
+[Graph] topological_sort: initial queue size: 1 
+[Executor] Execution order: input.name, reactive_0, render_1, output.greeting  (length: 4 )
+[Executor] should_execute: node input.name is dirty
+[Executor] Node input.name type= input , should_execute= TRUE 
+[Executor] Executing node input.name 
+[Executor] execute_node: executing input.name type= input 
+[Executor] execute_node: input node input.name value=' Test '
+[Executor] execute_node: stored value ' Test ' for input.name 
+[Executor] should_execute: node reactive_0 has dirty dependency input.name 
+[Executor] Node reactive_0 type= reactive , should_execute= TRUE 
+[Executor] Executing node reactive_0 
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, Test ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, Test ! '
+[Executor] execute_node: stored value ' Hello, Test ! ' for reactive_0 
+[Executor] should_execute: node render_1 has dirty dependency reactive_0 
+[Executor] Node render_1 type= render , should_execute= TRUE 
+[Executor] Executing node render_1 
+[Executor] execute_node: executing render_1 type= render 
+[Executor] execute_render: node deps: reactive_0 
+[Executor] should_execute: node reactive_0 is dirty
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, Test ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, Test ! '
+[Executor] execute_node: stored value ' Hello, Test ! ' for reactive_0 
+[Executor] execute_render: added reactive function greeting -> reactive_0 
+[Executor] execute_render: expression string: {     greeting() } 
+[Executor] execute_render: found function calls in expression: greeting 
+[Executor] execute_render: reactive_sources registry has: greeting 
+[Executor] execute_render: function greeting already in eval_env
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_render: input proxy test - input$name = ' Test '
+[Executor] execute_render: evaluating expr: {     greeting() } 
+[Executor] execute_render: available functions in eval_env: greeting, input 
+[Executor] should_execute: node reactive_0 is dirty
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, Test ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, Test ! '
+[Executor] execute_node: stored value ' Hello, Test ! ' for reactive_0 
+[Executor] execute_render: result=' Hello, Test ! '
+[Executor] execute_node: render node render_1 returned value=' Hello, Test ! '
+[Executor] execute_node: stored value ' Hello, Test ! ' for render_1 
+[Executor] should_execute: node output.greeting has dirty dependency render_1 
+[Executor] Node output.greeting type= output , should_execute= TRUE 
+[Executor] Executing node output.greeting 
+[Executor] execute_node: executing output.greeting type= output 
+[Executor] execute_node: output node output.greeting value=' NULL '
+[Executor] execute_node: value is NULL for output.greeting , not storing
+[Executor] execute() executed 4 nodes
+[Executor] execute() completed, cleared dirty flags
+[Executor] set_input: execute() completed
+[Executor] send_output_updates: checking 4 nodes
+[Executor] send_output_updates: Found render node render_1 with output_name= greeting 
+[Executor] should_execute: node render_1 does NOT need execution
+[Executor] send_output_updates: node render_1 value=' Hello, Test ! '
+[Executor] send_output_updates: sending update for greeting with value=' Hello, Test ! ' to 1 connections
+[Executor] send_output_updates: sent message to connection conn_1 
+[Executor] send_output_updates: sent 1 messages total
+[Executor] set_input: send_output_updates() completed
+[WebSocket] executor$set_input completed successfully
+[WebSocket] Received user_input:  name  =  Test U 
+[WebSocket] Executor found, calling set_input for name = Test U 
+[Executor] set_input: input_name= name , value=' Test U '
+[Executor] set_input: input node input.name already exists in graph
+[Executor] set_input: stored value ' Test U ' for input.name 
+[Executor] set_input: marked input.name as dirty
+[Executor] set_input: refreshed graph reference before execute(), now has 4 nodes
+[Executor] execute() called
+[Executor] execute() using graph from builder, updated reference
+[Executor] execute() graph has 4 nodes
+[Graph] topological_sort: found 4 nodes
+[Graph] topological_sort: total unique node IDs (from nodes + edges): 4 
+[Graph] topological_sort: processing 3 edges
+[Graph] topological_sort: edge from input.name to reactive_0 
+[Graph] topological_sort: edge from render_1 to output.greeting 
+[Graph] topological_sort: edge from reactive_0 to render_1 
+[Graph] topological_sort: checking 4 node IDs for in-degree 0
+[Graph] topological_sort: node input.name has in-degree 0 
+[Graph] topological_sort: node input.name has in-degree 0, adding to queue
+[Graph] topological_sort: node output.greeting has in-degree 1 
+[Graph] topological_sort: node reactive_0 has in-degree 1 
+[Graph] topological_sort: node render_1 has in-degree 1 
+[Graph] topological_sort: initial queue size: 1 
+[Executor] Execution order: input.name, reactive_0, render_1, output.greeting  (length: 4 )
+[Executor] should_execute: node input.name is dirty
+[Executor] Node input.name type= input , should_execute= TRUE 
+[Executor] Executing node input.name 
+[Executor] execute_node: executing input.name type= input 
+[Executor] execute_node: input node input.name value=' Test U '
+[Executor] execute_node: stored value ' Test U ' for input.name 
+[Executor] should_execute: node reactive_0 has dirty dependency input.name 
+[Executor] Node reactive_0 type= reactive , should_execute= TRUE 
+[Executor] Executing node reactive_0 
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, Test U ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, Test U ! '
+[Executor] execute_node: stored value ' Hello, Test U ! ' for reactive_0 
+[Executor] should_execute: node render_1 has dirty dependency reactive_0 
+[Executor] Node render_1 type= render , should_execute= TRUE 
+[Executor] Executing node render_1 
+[Executor] execute_node: executing render_1 type= render 
+[Executor] execute_render: node deps: reactive_0 
+[Executor] should_execute: node reactive_0 is dirty
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, Test U ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, Test U ! '
+[Executor] execute_node: stored value ' Hello, Test U ! ' for reactive_0 
+[Executor] execute_render: added reactive function greeting -> reactive_0 
+[Executor] execute_render: expression string: {     greeting() } 
+[Executor] execute_render: found function calls in expression: greeting 
+[Executor] execute_render: reactive_sources registry has: greeting 
+[Executor] execute_render: function greeting already in eval_env
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_render: input proxy test - input$name = ' Test U '
+[Executor] execute_render: evaluating expr: {     greeting() } 
+[Executor] execute_render: available functions in eval_env: greeting, input 
+[Executor] should_execute: node reactive_0 is dirty
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, Test U ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, Test U ! '
+[Executor] execute_node: stored value ' Hello, Test U ! ' for reactive_0 
+[Executor] execute_render: result=' Hello, Test U ! '
+[Executor] execute_node: render node render_1 returned value=' Hello, Test U ! '
+[Executor] execute_node: stored value ' Hello, Test U ! ' for render_1 
+[Executor] should_execute: node output.greeting has dirty dependency render_1 
+[Executor] Node output.greeting type= output , should_execute= TRUE 
+[Executor] Executing node output.greeting 
+[Executor] execute_node: executing output.greeting type= output 
+[Executor] execute_node: output node output.greeting value=' NULL '
+[Executor] execute_node: value is NULL for output.greeting , not storing
+[Executor] execute() executed 4 nodes
+[Executor] execute() completed, cleared dirty flags
+[Executor] set_input: execute() completed
+[Executor] send_output_updates: checking 4 nodes
+[Executor] send_output_updates: Found render node render_1 with output_name= greeting 
+[Executor] should_execute: node render_1 does NOT need execution
+[Executor] send_output_updates: node render_1 value=' Hello, Test U ! '
+[Executor] send_output_updates: sending update for greeting with value=' Hello, Test U ! ' to 1 connections
+[Executor] send_output_updates: sent message to connection conn_1 
+[Executor] send_output_updates: sent 1 messages total
+[Executor] set_input: send_output_updates() completed
+[WebSocket] executor$set_input completed successfully
+[WebSocket] Received user_input:  name  =  Test Us 
+[WebSocket] Executor found, calling set_input for name = Test Us 
+[Executor] set_input: input_name= name , value=' Test Us '
+[Executor] set_input: input node input.name already exists in graph
+[Executor] set_input: stored value ' Test Us ' for input.name 
+[Executor] set_input: marked input.name as dirty
+[Executor] set_input: refreshed graph reference before execute(), now has 4 nodes
+[Executor] execute() called
+[Executor] execute() using graph from builder, updated reference
+[Executor] execute() graph has 4 nodes
+[Graph] topological_sort: found 4 nodes
+[Graph] topological_sort: total unique node IDs (from nodes + edges): 4 
+[Graph] topological_sort: processing 3 edges
+[Graph] topological_sort: edge from input.name to reactive_0 
+[Graph] topological_sort: edge from render_1 to output.greeting 
+[Graph] topological_sort: edge from reactive_0 to render_1 
+[Graph] topological_sort: checking 4 node IDs for in-degree 0
+[Graph] topological_sort: node input.name has in-degree 0 
+[Graph] topological_sort: node input.name has in-degree 0, adding to queue
+[Graph] topological_sort: node output.greeting has in-degree 1 
+[Graph] topological_sort: node reactive_0 has in-degree 1 
+[Graph] topological_sort: node render_1 has in-degree 1 
+[Graph] topological_sort: initial queue size: 1 
+[Executor] Execution order: input.name, reactive_0, render_1, output.greeting  (length: 4 )
+[Executor] should_execute: node input.name is dirty
+[Executor] Node input.name type= input , should_execute= TRUE 
+[Executor] Executing node input.name 
+[Executor] execute_node: executing input.name type= input 
+[Executor] execute_node: input node input.name value=' Test Us '
+[Executor] execute_node: stored value ' Test Us ' for input.name 
+[Executor] should_execute: node reactive_0 has dirty dependency input.name 
+[Executor] Node reactive_0 type= reactive , should_execute= TRUE 
+[Executor] Executing node reactive_0 
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, Test Us ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, Test Us ! '
+[Executor] execute_node: stored value ' Hello, Test Us ! ' for reactive_0 
+[Executor] should_execute: node render_1 has dirty dependency reactive_0 
+[Executor] Node render_1 type= render , should_execute= TRUE 
+[Executor] Executing node render_1 
+[Executor] execute_node: executing render_1 type= render 
+[Executor] execute_render: node deps: reactive_0 
+[Executor] should_execute: node reactive_0 is dirty
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, Test Us ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, Test Us ! '
+[Executor] execute_node: stored value ' Hello, Test Us ! ' for reactive_0 
+[Executor] execute_render: added reactive function greeting -> reactive_0 
+[Executor] execute_render: expression string: {     greeting() } 
+[Executor] execute_render: found function calls in expression: greeting 
+[Executor] execute_render: reactive_sources registry has: greeting 
+[Executor] execute_render: function greeting already in eval_env
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_render: input proxy test - input$name = ' Test Us '
+[Executor] execute_render: evaluating expr: {     greeting() } 
+[Executor] execute_render: available functions in eval_env: greeting, input 
+[Executor] should_execute: node reactive_0 is dirty
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, Test Us ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, Test Us ! '
+[Executor] execute_node: stored value ' Hello, Test Us ! ' for reactive_0 
+[Executor] execute_render: result=' Hello, Test Us ! '
+[Executor] execute_node: render node render_1 returned value=' Hello, Test Us ! '
+[Executor] execute_node: stored value ' Hello, Test Us ! ' for render_1 
+[Executor] should_execute: node output.greeting has dirty dependency render_1 
+[Executor] Node output.greeting type= output , should_execute= TRUE 
+[Executor] Executing node output.greeting 
+[Executor] execute_node: executing output.greeting type= output 
+[Executor] execute_node: output node output.greeting value=' NULL '
+[Executor] execute_node: value is NULL for output.greeting , not storing
+[Executor] execute() executed 4 nodes
+[Executor] execute() completed, cleared dirty flags
+[Executor] set_input: execute() completed
+[Executor] send_output_updates: checking 4 nodes
+[Executor] send_output_updates: Found render node render_1 with output_name= greeting 
+[Executor] should_execute: node render_1 does NOT need execution
+[Executor] send_output_updates: node render_1 value=' Hello, Test Us ! '
+[Executor] send_output_updates: sending update for greeting with value=' Hello, Test Us ! ' to 1 connections
+[Executor] send_output_updates: sent message to connection conn_1 
+[Executor] send_output_updates: sent 1 messages total
+[Executor] set_input: send_output_updates() completed
+[WebSocket] executor$set_input completed successfully
+[WebSocket] Received user_input:  name  =  Test Use 
+[WebSocket] Executor found, calling set_input for name = Test Use 
+[Executor] set_input: input_name= name , value=' Test Use '
+[Executor] set_input: input node input.name already exists in graph
+[Executor] set_input: stored value ' Test Use ' for input.name 
+[Executor] set_input: marked input.name as dirty
+[Executor] set_input: refreshed graph reference before execute(), now has 4 nodes
+[Executor] execute() called
+[Executor] execute() using graph from builder, updated reference
+[Executor] execute() graph has 4 nodes
+[Graph] topological_sort: found 4 nodes
+[Graph] topological_sort: total unique node IDs (from nodes + edges): 4 
+[Graph] topological_sort: processing 3 edges
+[Graph] topological_sort: edge from input.name to reactive_0 
+[Graph] topological_sort: edge from render_1 to output.greeting 
+[Graph] topological_sort: edge from reactive_0 to render_1 
+[Graph] topological_sort: checking 4 node IDs for in-degree 0
+[Graph] topological_sort: node input.name has in-degree 0 
+[Graph] topological_sort: node input.name has in-degree 0, adding to queue
+[Graph] topological_sort: node output.greeting has in-degree 1 
+[Graph] topological_sort: node reactive_0 has in-degree 1 
+[Graph] topological_sort: node render_1 has in-degree 1 
+[Graph] topological_sort: initial queue size: 1 
+[Executor] Execution order: input.name, reactive_0, render_1, output.greeting  (length: 4 )
+[Executor] should_execute: node input.name is dirty
+[Executor] Node input.name type= input , should_execute= TRUE 
+[Executor] Executing node input.name 
+[Executor] execute_node: executing input.name type= input 
+[Executor] execute_node: input node input.name value=' Test Use '
+[Executor] execute_node: stored value ' Test Use ' for input.name 
+[Executor] should_execute: node reactive_0 has dirty dependency input.name 
+[Executor] Node reactive_0 type= reactive , should_execute= TRUE 
+[Executor] Executing node reactive_0 
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, Test Use ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, Test Use ! '
+[Executor] execute_node: stored value ' Hello, Test Use ! ' for reactive_0 
+[Executor] should_execute: node render_1 has dirty dependency reactive_0 
+[Executor] Node render_1 type= render , should_execute= TRUE 
+[Executor] Executing node render_1 
+[Executor] execute_node: executing render_1 type= render 
+[Executor] execute_render: node deps: reactive_0 
+[Executor] should_execute: node reactive_0 is dirty
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, Test Use ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, Test Use ! '
+[Executor] execute_node: stored value ' Hello, Test Use ! ' for reactive_0 
+[Executor] execute_render: added reactive function greeting -> reactive_0 
+[Executor] execute_render: expression string: {     greeting() } 
+[Executor] execute_render: found function calls in expression: greeting 
+[Executor] execute_render: reactive_sources registry has: greeting 
+[Executor] execute_render: function greeting already in eval_env
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_render: input proxy test - input$name = ' Test Use '
+[Executor] execute_render: evaluating expr: {     greeting() } 
+[Executor] execute_render: available functions in eval_env: greeting, input 
+[Executor] should_execute: node reactive_0 is dirty
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, Test Use ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, Test Use ! '
+[Executor] execute_node: stored value ' Hello, Test Use ! ' for reactive_0 
+[Executor] execute_render: result=' Hello, Test Use ! '
+[Executor] execute_node: render node render_1 returned value=' Hello, Test Use ! '
+[Executor] execute_node: stored value ' Hello, Test Use ! ' for render_1 
+[Executor] should_execute: node output.greeting has dirty dependency render_1 
+[Executor] Node output.greeting type= output , should_execute= TRUE 
+[Executor] Executing node output.greeting 
+[Executor] execute_node: executing output.greeting type= output 
+[Executor] execute_node: output node output.greeting value=' NULL '
+[Executor] execute_node: value is NULL for output.greeting , not storing
+[Executor] execute() executed 4 nodes
+[Executor] execute() completed, cleared dirty flags
+[Executor] set_input: execute() completed
+[Executor] send_output_updates: checking 4 nodes
+[Executor] send_output_updates: Found render node render_1 with output_name= greeting 
+[Executor] should_execute: node render_1 does NOT need execution
+[Executor] send_output_updates: node render_1 value=' Hello, Test Use ! '
+[Executor] send_output_updates: sending update for greeting with value=' Hello, Test Use ! ' to 1 connections
+[Executor] send_output_updates: sent message to connection conn_1 
+[Executor] send_output_updates: sent 1 messages total
+[Executor] set_input: send_output_updates() completed
+[WebSocket] executor$set_input completed successfully
+[WebSocket] Received user_input:  name  =  Test User 
+[WebSocket] Executor found, calling set_input for name = Test User 
+[Executor] set_input: input_name= name , value=' Test User '
+[Executor] set_input: input node input.name already exists in graph
+[Executor] set_input: stored value ' Test User ' for input.name 
+[Executor] set_input: marked input.name as dirty
+[Executor] set_input: refreshed graph reference before execute(), now has 4 nodes
+[Executor] execute() called
+[Executor] execute() using graph from builder, updated reference
+[Executor] execute() graph has 4 nodes
+[Graph] topological_sort: found 4 nodes
+[Graph] topological_sort: total unique node IDs (from nodes + edges): 4 
+[Graph] topological_sort: processing 3 edges
+[Graph] topological_sort: edge from input.name to reactive_0 
+[Graph] topological_sort: edge from render_1 to output.greeting 
+[Graph] topological_sort: edge from reactive_0 to render_1 
+[Graph] topological_sort: checking 4 node IDs for in-degree 0
+[Graph] topological_sort: node input.name has in-degree 0 
+[Graph] topological_sort: node input.name has in-degree 0, adding to queue
+[Graph] topological_sort: node output.greeting has in-degree 1 
+[Graph] topological_sort: node reactive_0 has in-degree 1 
+[Graph] topological_sort: node render_1 has in-degree 1 
+[Graph] topological_sort: initial queue size: 1 
+[Executor] Execution order: input.name, reactive_0, render_1, output.greeting  (length: 4 )
+[Executor] should_execute: node input.name is dirty
+[Executor] Node input.name type= input , should_execute= TRUE 
+[Executor] Executing node input.name 
+[Executor] execute_node: executing input.name type= input 
+[Executor] execute_node: input node input.name value=' Test User '
+[Executor] execute_node: stored value ' Test User ' for input.name 
+[Executor] should_execute: node reactive_0 has dirty dependency input.name 
+[Executor] Node reactive_0 type= reactive , should_execute= TRUE 
+[Executor] Executing node reactive_0 
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, Test User ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, Test User ! '
+[Executor] execute_node: stored value ' Hello, Test User ! ' for reactive_0 
+[Executor] should_execute: node render_1 has dirty dependency reactive_0 
+[Executor] Node render_1 type= render , should_execute= TRUE 
+[Executor] Executing node render_1 
+[Executor] execute_node: executing render_1 type= render 
+[Executor] execute_render: node deps: reactive_0 
+[Executor] should_execute: node reactive_0 is dirty
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, Test User ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, Test User ! '
+[Executor] execute_node: stored value ' Hello, Test User ! ' for reactive_0 
+[Executor] execute_render: added reactive function greeting -> reactive_0 
+[Executor] execute_render: expression string: {     greeting() } 
+[Executor] execute_render: found function calls in expression: greeting 
+[Executor] execute_render: reactive_sources registry has: greeting 
+[Executor] execute_render: function greeting already in eval_env
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_render: input proxy test - input$name = ' Test User '
+[Executor] execute_render: evaluating expr: {     greeting() } 
+[Executor] execute_render: available functions in eval_env: greeting, input 
+[Executor] should_execute: node reactive_0 is dirty
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, Test User ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, Test User ! '
+[Executor] execute_node: stored value ' Hello, Test User ! ' for reactive_0 
+[Executor] execute_render: result=' Hello, Test User ! '
+[Executor] execute_node: render node render_1 returned value=' Hello, Test User ! '
+[Executor] execute_node: stored value ' Hello, Test User ! ' for render_1 
+[Executor] should_execute: node output.greeting has dirty dependency render_1 
+[Executor] Node output.greeting type= output , should_execute= TRUE 
+[Executor] Executing node output.greeting 
+[Executor] execute_node: executing output.greeting type= output 
+[Executor] execute_node: output node output.greeting value=' NULL '
+[Executor] execute_node: value is NULL for output.greeting , not storing
+[Executor] execute() executed 4 nodes
+[Executor] execute() completed, cleared dirty flags
+[Executor] set_input: execute() completed
+[Executor] send_output_updates: checking 4 nodes
+[Executor] send_output_updates: Found render node render_1 with output_name= greeting 
+[Executor] should_execute: node render_1 does NOT need execution
+[Executor] send_output_updates: node render_1 value=' Hello, Test User ! '
+[Executor] send_output_updates: sending update for greeting with value=' Hello, Test User ! ' to 1 connections
+[Executor] send_output_updates: sent message to connection conn_1 
+[Executor] send_output_updates: sent 1 messages total
+[Executor] set_input: send_output_updates() completed
+[WebSocket] executor$set_input completed successfully
+[Executor] should_execute: node render_1 does NOT need execution
+[Executor] should_execute: node render_1 does NOT need execution
+[WebSocket] Received user_input:  name  =  h 
+[WebSocket] Executor found, calling set_input for name = h 
+[Executor] set_input: input_name= name , value=' h '
+[Executor] set_input: input node input.name already exists in graph
+[Executor] set_input: stored value ' h ' for input.name 
+[Executor] set_input: marked input.name as dirty
+[Executor] set_input: refreshed graph reference before execute(), now has 4 nodes
+[Executor] execute() called
+[Executor] execute() using graph from builder, updated reference
+[Executor] execute() graph has 4 nodes
+[Graph] topological_sort: found 4 nodes
+[Graph] topological_sort: total unique node IDs (from nodes + edges): 4 
+[Graph] topological_sort: processing 3 edges
+[Graph] topological_sort: edge from input.name to reactive_0 
+[Graph] topological_sort: edge from render_1 to output.greeting 
+[Graph] topological_sort: edge from reactive_0 to render_1 
+[Graph] topological_sort: checking 4 node IDs for in-degree 0
+[Graph] topological_sort: node input.name has in-degree 0 
+[Graph] topological_sort: node input.name has in-degree 0, adding to queue
+[Graph] topological_sort: node output.greeting has in-degree 1 
+[Graph] topological_sort: node reactive_0 has in-degree 1 
+[Graph] topological_sort: node render_1 has in-degree 1 
+[Graph] topological_sort: initial queue size: 1 
+[Executor] Execution order: input.name, reactive_0, render_1, output.greeting  (length: 4 )
+[Executor] should_execute: node input.name is dirty
+[Executor] Node input.name type= input , should_execute= TRUE 
+[Executor] Executing node input.name 
+[Executor] execute_node: executing input.name type= input 
+[Executor] execute_node: input node input.name value=' h '
+[Executor] execute_node: stored value ' h ' for input.name 
+[Executor] should_execute: node reactive_0 has dirty dependency input.name 
+[Executor] Node reactive_0 type= reactive , should_execute= TRUE 
+[Executor] Executing node reactive_0 
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, h ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, h ! '
+[Executor] execute_node: stored value ' Hello, h ! ' for reactive_0 
+[Executor] should_execute: node render_1 has dirty dependency reactive_0 
+[Executor] Node render_1 type= render , should_execute= TRUE 
+[Executor] Executing node render_1 
+[Executor] execute_node: executing render_1 type= render 
+[Executor] execute_render: node deps: reactive_0 
+[Executor] should_execute: node reactive_0 is dirty
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, h ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, h ! '
+[Executor] execute_node: stored value ' Hello, h ! ' for reactive_0 
+[Executor] execute_render: added reactive function greeting -> reactive_0 
+[Executor] execute_render: expression string: {     greeting() } 
+[Executor] execute_render: found function calls in expression: greeting 
+[Executor] execute_render: reactive_sources registry has: greeting 
+[Executor] execute_render: function greeting already in eval_env
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_render: input proxy test - input$name = ' h '
+[Executor] execute_render: evaluating expr: {     greeting() } 
+[Executor] execute_render: available functions in eval_env: greeting, input 
+[Executor] should_execute: node reactive_0 is dirty
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, h ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, h ! '
+[Executor] execute_node: stored value ' Hello, h ! ' for reactive_0 
+[Executor] execute_render: result=' Hello, h ! '
+[Executor] execute_node: render node render_1 returned value=' Hello, h ! '
+[Executor] execute_node: stored value ' Hello, h ! ' for render_1 
+[Executor] should_execute: node output.greeting has dirty dependency render_1 
+[Executor] Node output.greeting type= output , should_execute= TRUE 
+[Executor] Executing node output.greeting 
+[Executor] execute_node: executing output.greeting type= output 
+[Executor] execute_node: output node output.greeting value=' NULL '
+[Executor] execute_node: value is NULL for output.greeting , not storing
+[Executor] execute() executed 4 nodes
+[Executor] execute() completed, cleared dirty flags
+[Executor] set_input: execute() completed
+[Executor] send_output_updates: checking 4 nodes
+[Executor] send_output_updates: Found render node render_1 with output_name= greeting 
+[Executor] should_execute: node render_1 does NOT need execution
+[Executor] send_output_updates: node render_1 value=' Hello, h ! '
+[Executor] send_output_updates: sending update for greeting with value=' Hello, h ! ' to 1 connections
+[Executor] send_output_updates: sent message to connection conn_1 
+[Executor] send_output_updates: sent 1 messages total
+[Executor] set_input: send_output_updates() completed
+[WebSocket] executor$set_input completed successfully
+[WebSocket] Received user_input:  name  =  he 
+[WebSocket] Executor found, calling set_input for name = he 
+[Executor] set_input: input_name= name , value=' he '
+[Executor] set_input: input node input.name already exists in graph
+[Executor] set_input: stored value ' he ' for input.name 
+[Executor] set_input: marked input.name as dirty
+[Executor] set_input: refreshed graph reference before execute(), now has 4 nodes
+[Executor] execute() called
+[Executor] execute() using graph from builder, updated reference
+[Executor] execute() graph has 4 nodes
+[Graph] topological_sort: found 4 nodes
+[Graph] topological_sort: total unique node IDs (from nodes + edges): 4 
+[Graph] topological_sort: processing 3 edges
+[Graph] topological_sort: edge from input.name to reactive_0 
+[Graph] topological_sort: edge from render_1 to output.greeting 
+[Graph] topological_sort: edge from reactive_0 to render_1 
+[Graph] topological_sort: checking 4 node IDs for in-degree 0
+[Graph] topological_sort: node input.name has in-degree 0 
+[Graph] topological_sort: node input.name has in-degree 0, adding to queue
+[Graph] topological_sort: node output.greeting has in-degree 1 
+[Graph] topological_sort: node reactive_0 has in-degree 1 
+[Graph] topological_sort: node render_1 has in-degree 1 
+[Graph] topological_sort: initial queue size: 1 
+[Executor] Execution order: input.name, reactive_0, render_1, output.greeting  (length: 4 )
+[Executor] should_execute: node input.name is dirty
+[Executor] Node input.name type= input , should_execute= TRUE 
+[Executor] Executing node input.name 
+[Executor] execute_node: executing input.name type= input 
+[Executor] execute_node: input node input.name value=' he '
+[Executor] execute_node: stored value ' he ' for input.name 
+[Executor] should_execute: node reactive_0 has dirty dependency input.name 
+[Executor] Node reactive_0 type= reactive , should_execute= TRUE 
+[Executor] Executing node reactive_0 
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, he ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, he ! '
+[Executor] execute_node: stored value ' Hello, he ! ' for reactive_0 
+[Executor] should_execute: node render_1 has dirty dependency reactive_0 
+[Executor] Node render_1 type= render , should_execute= TRUE 
+[Executor] Executing node render_1 
+[Executor] execute_node: executing render_1 type= render 
+[Executor] execute_render: node deps: reactive_0 
+[Executor] should_execute: node reactive_0 is dirty
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, he ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, he ! '
+[Executor] execute_node: stored value ' Hello, he ! ' for reactive_0 
+[Executor] execute_render: added reactive function greeting -> reactive_0 
+[Executor] execute_render: expression string: {     greeting() } 
+[Executor] execute_render: found function calls in expression: greeting 
+[Executor] execute_render: reactive_sources registry has: greeting 
+[Executor] execute_render: function greeting already in eval_env
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_render: input proxy test - input$name = ' he '
+[Executor] execute_render: evaluating expr: {     greeting() } 
+[Executor] execute_render: available functions in eval_env: greeting, input 
+[Executor] should_execute: node reactive_0 is dirty
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, he ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, he ! '
+[Executor] execute_node: stored value ' Hello, he ! ' for reactive_0 
+[Executor] execute_render: result=' Hello, he ! '
+[Executor] execute_node: render node render_1 returned value=' Hello, he ! '
+[Executor] execute_node: stored value ' Hello, he ! ' for render_1 
+[Executor] should_execute: node output.greeting has dirty dependency render_1 
+[Executor] Node output.greeting type= output , should_execute= TRUE 
+[Executor] Executing node output.greeting 
+[Executor] execute_node: executing output.greeting type= output 
+[Executor] execute_node: output node output.greeting value=' NULL '
+[Executor] execute_node: value is NULL for output.greeting , not storing
+[Executor] execute() executed 4 nodes
+[Executor] execute() completed, cleared dirty flags
+[Executor] set_input: execute() completed
+[Executor] send_output_updates: checking 4 nodes
+[Executor] send_output_updates: Found render node render_1 with output_name= greeting 
+[Executor] should_execute: node render_1 does NOT need execution
+[Executor] send_output_updates: node render_1 value=' Hello, he ! '
+[Executor] send_output_updates: sending update for greeting with value=' Hello, he ! ' to 1 connections
+[Executor] send_output_updates: sent message to connection conn_1 
+[Executor] send_output_updates: sent 1 messages total
+[Executor] set_input: send_output_updates() completed
+[WebSocket] executor$set_input completed successfully
+[WebSocket] Received user_input:  name  =  hel 
+[WebSocket] Executor found, calling set_input for name = hel 
+[Executor] set_input: input_name= name , value=' hel '
+[Executor] set_input: input node input.name already exists in graph
+[Executor] set_input: stored value ' hel ' for input.name 
+[Executor] set_input: marked input.name as dirty
+[Executor] set_input: refreshed graph reference before execute(), now has 4 nodes
+[Executor] execute() called
+[Executor] execute() using graph from builder, updated reference
+[Executor] execute() graph has 4 nodes
+[Graph] topological_sort: found 4 nodes
+[Graph] topological_sort: total unique node IDs (from nodes + edges): 4 
+[Graph] topological_sort: processing 3 edges
+[Graph] topological_sort: edge from input.name to reactive_0 
+[Graph] topological_sort: edge from render_1 to output.greeting 
+[Graph] topological_sort: edge from reactive_0 to render_1 
+[Graph] topological_sort: checking 4 node IDs for in-degree 0
+[Graph] topological_sort: node input.name has in-degree 0 
+[Graph] topological_sort: node input.name has in-degree 0, adding to queue
+[Graph] topological_sort: node output.greeting has in-degree 1 
+[Graph] topological_sort: node reactive_0 has in-degree 1 
+[Graph] topological_sort: node render_1 has in-degree 1 
+[Graph] topological_sort: initial queue size: 1 
+[Executor] Execution order: input.name, reactive_0, render_1, output.greeting  (length: 4 )
+[Executor] should_execute: node input.name is dirty
+[Executor] Node input.name type= input , should_execute= TRUE 
+[Executor] Executing node input.name 
+[Executor] execute_node: executing input.name type= input 
+[Executor] execute_node: input node input.name value=' hel '
+[Executor] execute_node: stored value ' hel ' for input.name 
+[Executor] should_execute: node reactive_0 has dirty dependency input.name 
+[Executor] Node reactive_0 type= reactive , should_execute= TRUE 
+[Executor] Executing node reactive_0 
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, hel ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, hel ! '
+[Executor] execute_node: stored value ' Hello, hel ! ' for reactive_0 
+[Executor] should_execute: node render_1 has dirty dependency reactive_0 
+[Executor] Node render_1 type= render , should_execute= TRUE 
+[Executor] Executing node render_1 
+[Executor] execute_node: executing render_1 type= render 
+[Executor] execute_render: node deps: reactive_0 
+[Executor] should_execute: node reactive_0 is dirty
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, hel ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, hel ! '
+[Executor] execute_node: stored value ' Hello, hel ! ' for reactive_0 
+[Executor] execute_render: added reactive function greeting -> reactive_0 
+[Executor] execute_render: expression string: {     greeting() } 
+[Executor] execute_render: found function calls in expression: greeting 
+[Executor] execute_render: reactive_sources registry has: greeting 
+[Executor] execute_render: function greeting already in eval_env
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_render: input proxy test - input$name = ' hel '
+[Executor] execute_render: evaluating expr: {     greeting() } 
+[Executor] execute_render: available functions in eval_env: greeting, input 
+[Executor] should_execute: node reactive_0 is dirty
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, hel ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, hel ! '
+[Executor] execute_node: stored value ' Hello, hel ! ' for reactive_0 
+[Executor] execute_render: result=' Hello, hel ! '
+[Executor] execute_node: render node render_1 returned value=' Hello, hel ! '
+[Executor] execute_node: stored value ' Hello, hel ! ' for render_1 
+[Executor] should_execute: node output.greeting has dirty dependency render_1 
+[Executor] Node output.greeting type= output , should_execute= TRUE 
+[Executor] Executing node output.greeting 
+[Executor] execute_node: executing output.greeting type= output 
+[Executor] execute_node: output node output.greeting value=' NULL '
+[Executor] execute_node: value is NULL for output.greeting , not storing
+[Executor] execute() executed 4 nodes
+[Executor] execute() completed, cleared dirty flags
+[Executor] set_input: execute() completed
+[Executor] send_output_updates: checking 4 nodes
+[Executor] send_output_updates: Found render node render_1 with output_name= greeting 
+[Executor] should_execute: node render_1 does NOT need execution
+[Executor] send_output_updates: node render_1 value=' Hello, hel ! '
+[Executor] send_output_updates: sending update for greeting with value=' Hello, hel ! ' to 1 connections
+[Executor] send_output_updates: sent message to connection conn_1 
+[Executor] send_output_updates: sent 1 messages total
+[Executor] set_input: send_output_updates() completed
+[WebSocket] executor$set_input completed successfully
+[WebSocket] Received user_input:  name  =  hell 
+[WebSocket] Executor found, calling set_input for name = hell 
+[Executor] set_input: input_name= name , value=' hell '
+[Executor] set_input: input node input.name already exists in graph
+[Executor] set_input: stored value ' hell ' for input.name 
+[Executor] set_input: marked input.name as dirty
+[Executor] set_input: refreshed graph reference before execute(), now has 4 nodes
+[Executor] execute() called
+[Executor] execute() using graph from builder, updated reference
+[Executor] execute() graph has 4 nodes
+[Graph] topological_sort: found 4 nodes
+[Graph] topological_sort: total unique node IDs (from nodes + edges): 4 
+[Graph] topological_sort: processing 3 edges
+[Graph] topological_sort: edge from input.name to reactive_0 
+[Graph] topological_sort: edge from render_1 to output.greeting 
+[Graph] topological_sort: edge from reactive_0 to render_1 
+[Graph] topological_sort: checking 4 node IDs for in-degree 0
+[Graph] topological_sort: node input.name has in-degree 0 
+[Graph] topological_sort: node input.name has in-degree 0, adding to queue
+[Graph] topological_sort: node output.greeting has in-degree 1 
+[Graph] topological_sort: node reactive_0 has in-degree 1 
+[Graph] topological_sort: node render_1 has in-degree 1 
+[Graph] topological_sort: initial queue size: 1 
+[Executor] Execution order: input.name, reactive_0, render_1, output.greeting  (length: 4 )
+[Executor] should_execute: node input.name is dirty
+[Executor] Node input.name type= input , should_execute= TRUE 
+[Executor] Executing node input.name 
+[Executor] execute_node: executing input.name type= input 
+[Executor] execute_node: input node input.name value=' hell '
+[Executor] execute_node: stored value ' hell ' for input.name 
+[Executor] should_execute: node reactive_0 has dirty dependency input.name 
+[Executor] Node reactive_0 type= reactive , should_execute= TRUE 
+[Executor] Executing node reactive_0 
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, hell ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, hell ! '
+[Executor] execute_node: stored value ' Hello, hell ! ' for reactive_0 
+[Executor] should_execute: node render_1 has dirty dependency reactive_0 
+[Executor] Node render_1 type= render , should_execute= TRUE 
+[Executor] Executing node render_1 
+[Executor] execute_node: executing render_1 type= render 
+[Executor] execute_render: node deps: reactive_0 
+[Executor] should_execute: node reactive_0 is dirty
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, hell ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, hell ! '
+[Executor] execute_node: stored value ' Hello, hell ! ' for reactive_0 
+[Executor] execute_render: added reactive function greeting -> reactive_0 
+[Executor] execute_render: expression string: {     greeting() } 
+[Executor] execute_render: found function calls in expression: greeting 
+[Executor] execute_render: reactive_sources registry has: greeting 
+[Executor] execute_render: function greeting already in eval_env
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_render: input proxy test - input$name = ' hell '
+[Executor] execute_render: evaluating expr: {     greeting() } 
+[Executor] execute_render: available functions in eval_env: greeting, input 
+[Executor] should_execute: node reactive_0 is dirty
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, hell ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, hell ! '
+[Executor] execute_node: stored value ' Hello, hell ! ' for reactive_0 
+[Executor] execute_render: result=' Hello, hell ! '
+[Executor] execute_node: render node render_1 returned value=' Hello, hell ! '
+[Executor] execute_node: stored value ' Hello, hell ! ' for render_1 
+[Executor] should_execute: node output.greeting has dirty dependency render_1 
+[Executor] Node output.greeting type= output , should_execute= TRUE 
+[Executor] Executing node output.greeting 
+[Executor] execute_node: executing output.greeting type= output 
+[Executor] execute_node: output node output.greeting value=' NULL '
+[Executor] execute_node: value is NULL for output.greeting , not storing
+[Executor] execute() executed 4 nodes
+[Executor] execute() completed, cleared dirty flags
+[Executor] set_input: execute() completed
+[Executor] send_output_updates: checking 4 nodes
+[Executor] send_output_updates: Found render node render_1 with output_name= greeting 
+[Executor] should_execute: node render_1 does NOT need execution
+[Executor] send_output_updates: node render_1 value=' Hello, hell ! '
+[Executor] send_output_updates: sending update for greeting with value=' Hello, hell ! ' to 1 connections
+[Executor] send_output_updates: sent message to connection conn_1 
+[Executor] send_output_updates: sent 1 messages total
+[Executor] set_input: send_output_updates() completed
+[WebSocket] executor$set_input completed successfully
+[WebSocket] Received user_input:  name  =  hello 
+[WebSocket] Executor found, calling set_input for name = hello 
+[Executor] set_input: input_name= name , value=' hello '
+[Executor] set_input: input node input.name already exists in graph
+[Executor] set_input: stored value ' hello ' for input.name 
+[Executor] set_input: marked input.name as dirty
+[Executor] set_input: refreshed graph reference before execute(), now has 4 nodes
+[Executor] execute() called
+[Executor] execute() using graph from builder, updated reference
+[Executor] execute() graph has 4 nodes
+[Graph] topological_sort: found 4 nodes
+[Graph] topological_sort: total unique node IDs (from nodes + edges): 4 
+[Graph] topological_sort: processing 3 edges
+[Graph] topological_sort: edge from input.name to reactive_0 
+[Graph] topological_sort: edge from render_1 to output.greeting 
+[Graph] topological_sort: edge from reactive_0 to render_1 
+[Graph] topological_sort: checking 4 node IDs for in-degree 0
+[Graph] topological_sort: node input.name has in-degree 0 
+[Graph] topological_sort: node input.name has in-degree 0, adding to queue
+[Graph] topological_sort: node output.greeting has in-degree 1 
+[Graph] topological_sort: node reactive_0 has in-degree 1 
+[Graph] topological_sort: node render_1 has in-degree 1 
+[Graph] topological_sort: initial queue size: 1 
+[Executor] Execution order: input.name, reactive_0, render_1, output.greeting  (length: 4 )
+[Executor] should_execute: node input.name is dirty
+[Executor] Node input.name type= input , should_execute= TRUE 
+[Executor] Executing node input.name 
+[Executor] execute_node: executing input.name type= input 
+[Executor] execute_node: input node input.name value=' hello '
+[Executor] execute_node: stored value ' hello ' for input.name 
+[Executor] should_execute: node reactive_0 has dirty dependency input.name 
+[Executor] Node reactive_0 type= reactive , should_execute= TRUE 
+[Executor] Executing node reactive_0 
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, hello ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, hello ! '
+[Executor] execute_node: stored value ' Hello, hello ! ' for reactive_0 
+[Executor] should_execute: node render_1 has dirty dependency reactive_0 
+[Executor] Node render_1 type= render , should_execute= TRUE 
+[Executor] Executing node render_1 
+[Executor] execute_node: executing render_1 type= render 
+[Executor] execute_render: node deps: reactive_0 
+[Executor] should_execute: node reactive_0 is dirty
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, hello ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, hello ! '
+[Executor] execute_node: stored value ' Hello, hello ! ' for reactive_0 
+[Executor] execute_render: added reactive function greeting -> reactive_0 
+[Executor] execute_render: expression string: {     greeting() } 
+[Executor] execute_render: found function calls in expression: greeting 
+[Executor] execute_render: reactive_sources registry has: greeting 
+[Executor] execute_render: function greeting already in eval_env
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_render: input proxy test - input$name = ' hello '
+[Executor] execute_render: evaluating expr: {     greeting() } 
+[Executor] execute_render: available functions in eval_env: greeting, input 
+[Executor] should_execute: node reactive_0 is dirty
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, hello ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, hello ! '
+[Executor] execute_node: stored value ' Hello, hello ! ' for reactive_0 
+[Executor] execute_render: result=' Hello, hello ! '
+[Executor] execute_node: render node render_1 returned value=' Hello, hello ! '
+[Executor] execute_node: stored value ' Hello, hello ! ' for render_1 
+[Executor] should_execute: node output.greeting has dirty dependency render_1 
+[Executor] Node output.greeting type= output , should_execute= TRUE 
+[Executor] Executing node output.greeting 
+[Executor] execute_node: executing output.greeting type= output 
+[Executor] execute_node: output node output.greeting value=' NULL '
+[Executor] execute_node: value is NULL for output.greeting , not storing
+[Executor] execute() executed 4 nodes
+[Executor] execute() completed, cleared dirty flags
+[Executor] set_input: execute() completed
+[Executor] send_output_updates: checking 4 nodes
+[Executor] send_output_updates: Found render node render_1 with output_name= greeting 
+[Executor] should_execute: node render_1 does NOT need execution
+[Executor] send_output_updates: node render_1 value=' Hello, hello ! '
+[Executor] send_output_updates: sending update for greeting with value=' Hello, hello ! ' to 1 connections
+[Executor] send_output_updates: sent message to connection conn_1 
+[Executor] send_output_updates: sent 1 messages total
+[Executor] set_input: send_output_updates() completed
+[WebSocket] executor$set_input completed successfully
+[WebSocket] Received user_input:  name  =  hello! 
+[WebSocket] Executor found, calling set_input for name = hello! 
+[Executor] set_input: input_name= name , value=' hello! '
+[Executor] set_input: input node input.name already exists in graph
+[Executor] set_input: stored value ' hello! ' for input.name 
+[Executor] set_input: marked input.name as dirty
+[Executor] set_input: refreshed graph reference before execute(), now has 4 nodes
+[Executor] execute() called
+[Executor] execute() using graph from builder, updated reference
+[Executor] execute() graph has 4 nodes
+[Graph] topological_sort: found 4 nodes
+[Graph] topological_sort: total unique node IDs (from nodes + edges): 4 
+[Graph] topological_sort: processing 3 edges
+[Graph] topological_sort: edge from input.name to reactive_0 
+[Graph] topological_sort: edge from render_1 to output.greeting 
+[Graph] topological_sort: edge from reactive_0 to render_1 
+[Graph] topological_sort: checking 4 node IDs for in-degree 0
+[Graph] topological_sort: node input.name has in-degree 0 
+[Graph] topological_sort: node input.name has in-degree 0, adding to queue
+[Graph] topological_sort: node output.greeting has in-degree 1 
+[Graph] topological_sort: node reactive_0 has in-degree 1 
+[Graph] topological_sort: node render_1 has in-degree 1 
+[Graph] topological_sort: initial queue size: 1 
+[Executor] Execution order: input.name, reactive_0, render_1, output.greeting  (length: 4 )
+[Executor] should_execute: node input.name is dirty
+[Executor] Node input.name type= input , should_execute= TRUE 
+[Executor] Executing node input.name 
+[Executor] execute_node: executing input.name type= input 
+[Executor] execute_node: input node input.name value=' hello! '
+[Executor] execute_node: stored value ' hello! ' for input.name 
+[Executor] should_execute: node reactive_0 has dirty dependency input.name 
+[Executor] Node reactive_0 type= reactive , should_execute= TRUE 
+[Executor] Executing node reactive_0 
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, hello! ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, hello! ! '
+[Executor] execute_node: stored value ' Hello, hello! ! ' for reactive_0 
+[Executor] should_execute: node render_1 has dirty dependency reactive_0 
+[Executor] Node render_1 type= render , should_execute= TRUE 
+[Executor] Executing node render_1 
+[Executor] execute_node: executing render_1 type= render 
+[Executor] execute_render: node deps: reactive_0 
+[Executor] should_execute: node reactive_0 is dirty
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, hello! ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, hello! ! '
+[Executor] execute_node: stored value ' Hello, hello! ! ' for reactive_0 
+[Executor] execute_render: added reactive function greeting -> reactive_0 
+[Executor] execute_render: expression string: {     greeting() } 
+[Executor] execute_render: found function calls in expression: greeting 
+[Executor] execute_render: reactive_sources registry has: greeting 
+[Executor] execute_render: function greeting already in eval_env
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_render: input proxy test - input$name = ' hello! '
+[Executor] execute_render: evaluating expr: {     greeting() } 
+[Executor] execute_render: available functions in eval_env: greeting, input 
+[Executor] should_execute: node reactive_0 is dirty
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello, hello! ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello, hello! ! '
+[Executor] execute_node: stored value ' Hello, hello! ! ' for reactive_0 
+[Executor] execute_render: result=' Hello, hello! ! '
+[Executor] execute_node: render node render_1 returned value=' Hello, hello! ! '
+[Executor] execute_node: stored value ' Hello, hello! ! ' for render_1 
+[Executor] should_execute: node output.greeting has dirty dependency render_1 
+[Executor] Node output.greeting type= output , should_execute= TRUE 
+[Executor] Executing node output.greeting 
+[Executor] execute_node: executing output.greeting type= output 
+[Executor] execute_node: output node output.greeting value=' NULL '
+[Executor] execute_node: value is NULL for output.greeting , not storing
+[Executor] execute() executed 4 nodes
+[Executor] execute() completed, cleared dirty flags
+[Executor] set_input: execute() completed
+[Executor] send_output_updates: checking 4 nodes
+[Executor] send_output_updates: Found render node render_1 with output_name= greeting 
+[Executor] should_execute: node render_1 does NOT need execution
+[Executor] send_output_updates: node render_1 value=' Hello, hello! ! '
+[Executor] send_output_updates: sending update for greeting with value=' Hello, hello! ! ' to 1 connections
+[Executor] send_output_updates: sent message to connection conn_1 
+[Executor] send_output_updates: sent 1 messages total
+[Executor] set_input: send_output_updates() completed
+[WebSocket] executor$set_input completed successfully
+[WebSocket] Received user_input:  name  =   
+[WebSocket] Executor found, calling set_input for name =  
+[Executor] set_input: input_name= name , value='  '
+[Executor] set_input: input node input.name already exists in graph
+[Executor] set_input: stored value '  ' for input.name 
+[Executor] set_input: marked input.name as dirty
+[Executor] set_input: refreshed graph reference before execute(), now has 4 nodes
+[Executor] execute() called
+[Executor] execute() using graph from builder, updated reference
+[Executor] execute() graph has 4 nodes
+[Graph] topological_sort: found 4 nodes
+[Graph] topological_sort: total unique node IDs (from nodes + edges): 4 
+[Graph] topological_sort: processing 3 edges
+[Graph] topological_sort: edge from input.name to reactive_0 
+[Graph] topological_sort: edge from render_1 to output.greeting 
+[Graph] topological_sort: edge from reactive_0 to render_1 
+[Graph] topological_sort: checking 4 node IDs for in-degree 0
+[Graph] topological_sort: node input.name has in-degree 0 
+[Graph] topological_sort: node input.name has in-degree 0, adding to queue
+[Graph] topological_sort: node output.greeting has in-degree 1 
+[Graph] topological_sort: node reactive_0 has in-degree 1 
+[Graph] topological_sort: node render_1 has in-degree 1 
+[Graph] topological_sort: initial queue size: 1 
+[Executor] Execution order: input.name, reactive_0, render_1, output.greeting  (length: 4 )
+[Executor] should_execute: node input.name is dirty
+[Executor] Node input.name type= input , should_execute= TRUE 
+[Executor] Executing node input.name 
+[Executor] execute_node: executing input.name type= input 
+[Executor] execute_node: input node input.name value='  '
+[Executor] execute_node: stored value '  ' for input.name 
+[Executor] should_execute: node reactive_0 has dirty dependency input.name 
+[Executor] Node reactive_0 type= reactive , should_execute= TRUE 
+[Executor] Executing node reactive_0 
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello,  ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello,  ! '
+[Executor] execute_node: stored value ' Hello,  ! ' for reactive_0 
+[Executor] should_execute: node render_1 has dirty dependency reactive_0 
+[Executor] Node render_1 type= render , should_execute= TRUE 
+[Executor] Executing node render_1 
+[Executor] execute_node: executing render_1 type= render 
+[Executor] execute_render: node deps: reactive_0 
+[Executor] should_execute: node reactive_0 is dirty
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello,  ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello,  ! '
+[Executor] execute_node: stored value ' Hello,  ! ' for reactive_0 
+[Executor] execute_render: added reactive function greeting -> reactive_0 
+[Executor] execute_render: expression string: {     greeting() } 
+[Executor] execute_render: found function calls in expression: greeting 
+[Executor] execute_render: reactive_sources registry has: greeting 
+[Executor] execute_render: function greeting already in eval_env
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_render: input proxy test - input$name = '  '
+[Executor] execute_render: evaluating expr: {     greeting() } 
+[Executor] execute_render: available functions in eval_env: greeting, input 
+[Executor] should_execute: node reactive_0 is dirty
+[Executor] execute_node: executing reactive_0 type= reactive 
+[Executor] execute_reactive: executing node reactive_0 
+[Executor] execute_reactive: reconstructed expr: {     paste("Hello,", input$name, "!") } 
+[Executor] execute_reactive: evaluating expr: {     paste("Hello,", input$name, "!") } 
+[InputProxy] get: name= name , node_id= input.name 
+[Executor] execute_reactive: result=' Hello,  ! '
+[Executor] execute_node: reactive node reactive_0 returned value=' Hello,  ! '
+[Executor] execute_node: stored value ' Hello,  ! ' for reactive_0 
+[Executor] execute_render: result=' Hello,  ! '
+[Executor] execute_node: render node render_1 returned value=' Hello,  ! '
+[Executor] execute_node: stored value ' Hello,  ! ' for render_1 
+[Executor] should_execute: node output.greeting has dirty dependency render_1 
+[Executor] Node output.greeting type= output , should_execute= TRUE 
+[Executor] Executing node output.greeting 
+[Executor] execute_node: executing output.greeting type= output 
+[Executor] execute_node: output node output.greeting value=' NULL '
+[Executor] execute_node: value is NULL for output.greeting , not storing
+[Executor] execute() executed 4 nodes
+[Executor] execute() completed, cleared dirty flags
+[Executor] set_input: execute() completed
+[Executor] send_output_updates: checking 4 nodes
+[Executor] send_output_updates: Found render node render_1 with output_name= greeting 
+[Executor] should_execute: node render_1 does NOT need execution
+[Executor] send_output_updates: node render_1 value=' Hello,  ! '
+[Executor] send_output_updates: sending update for greeting with value=' Hello,  ! ' to 1 connections
+[Executor] send_output_updates: sent message to connection conn_1 
+[Executor] send_output_updates: sent 1 messages total
+[Executor] set_input: send_output_updates() completed
+[WebSocket] executor$set_input completed successfully

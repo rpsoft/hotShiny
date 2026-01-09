@@ -1,0 +1,23 @@
+Package: hotShiny
+Type: Package
+Title: Shiny-Compatible Reactive Framework with Hot Reloading
+Version: 0.1.0
+Author: HotShiny Contributors
+Maintainer: HotShiny Contributors <maintainer@hotshiny.example>
+Description: A Shiny-compatible R package that supports hot-reloading by
+    transforming Shiny's execution model into a declarative, diffable reactive
+    graph. Maintains API compatibility while fundamentally changing runtime semantics.
+License: MIT
+Encoding: UTF-8
+LazyData: true
+Imports:
+    R6 (>= 2.5.0),
+    rlang (>= 1.0.0),
+    httpuv (>= 1.6.0),
+    later (>= 1.3.0),
+    jsonlite (>= 1.8.0),
+    digest (>= 0.6.0)
+Suggests:
+    testthat (>= 3.0.0),
+    shinytest2 (>= 0.1.0)
+RoxygenNote: 7.2.0
