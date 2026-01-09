@@ -17,9 +17,9 @@
 
   # Load required files in order (dependencies first)
   files_to_load <- c(
-    "R/ir/node-types.R",
-    "R/ir/dependency-tracker.R",
-    "R/ir/graph-builder.R"
+    "R/ir-node-types.R",
+    "R/ir-dependency-tracker.R",
+    "R/ir-graph-builder.R"
   )
 
   # Try current directory first (for development with devtools::load_all)
@@ -68,9 +68,9 @@
     base_path <- system.file(package = "hotShiny")
   }
 
-  file_path <- file.path(base_path, "R/runtime/state-manager.R")
+  file_path <- file.path(base_path, "R/runtime-state-manager.R")
   if (!file.exists(file_path)) {
-    file_path <- system.file("R/runtime/state-manager.R", package = "hotShiny", mustWork = FALSE)
+    file_path <- system.file("R/runtime-state-manager.R", package = "hotShiny", mustWork = FALSE)
   }
   if (file_path != "" && file.exists(file_path)) {
     sys.source(file_path, envir = load_env)
@@ -98,9 +98,9 @@
     .get_state_manager_class() # This will load StateManager
   }
 
-  file_path <- file.path(base_path, "R/runtime/executor.R")
+  file_path <- file.path(base_path, "R/runtime-executor.R")
   if (!file.exists(file_path)) {
-    file_path <- system.file("R/runtime/executor.R", package = "hotShiny", mustWork = FALSE)
+    file_path <- system.file("R/runtime-executor.R", package = "hotShiny", mustWork = FALSE)
   }
   if (file_path != "" && file.exists(file_path)) {
     sys.source(file_path, envir = load_env)
@@ -133,7 +133,7 @@ app <- function(ui, server, ...) {
   } else {
     # Fallback: source the file
     temp_env <- new.env(parent = ns)
-    file_path <- file.path(getwd(), "R/core/reactive.R")
+    file_path <- file.path(getwd(), "R/core-reactive.R")
     if (file.exists(file_path)) {
       sys.source(file_path, envir = temp_env)
       if (exists("set_graph_builder", envir = temp_env)) {
@@ -160,7 +160,7 @@ app <- function(ui, server, ...) {
     get("set_executor", envir = ns)(executor)
   } else {
     temp_env <- new.env(parent = ns)
-    file_path <- file.path(getwd(), "R/runtime/state-manager.R")
+    file_path <- file.path(getwd(), "R/runtime-state-manager.R")
     if (file.exists(file_path)) {
       sys.source(file_path, envir = temp_env)
       if (exists("set_executor", envir = temp_env)) {
@@ -334,17 +334,17 @@ HotShinyApp <- R6::R6Class("HotShinyApp",
 
         if (!is.null(base_path)) {
           # Load dependency tracker first (needed by reactive, observe, render)
-          dep_tracker_file <- file.path(base_path, "R/ir/dependency-tracker.R")
+          dep_tracker_file <- file.path(base_path, "R/ir-dependency-tracker.R")
           if (file.exists(dep_tracker_file)) {
             sys.source(dep_tracker_file, envir = load_env)
           }
 
           # Then load core files
           core_files <- c(
-            "R/core/reactive.R",
-            "R/core/observe.R",
-            "R/core/render.R",
-            "R/core/values.R"
+            "R/core-reactive.R",
+            "R/core-observe.R",
+            "R/core-render.R",
+            "R/core-values.R"
           )
           for (file_rel in core_files) {
             file_path <- file.path(base_path, file_rel)
@@ -408,7 +408,7 @@ HotShinyApp <- R6::R6Class("HotShinyApp",
         if (is.null(InputProxyClass) || is.null(OutputProxyClass)) {
           # Load values.R to get proxy classes
           if (!is.null(base_path)) {
-            values_file <- file.path(base_path, "R/core/values.R")
+            values_file <- file.path(base_path, "R/core-values.R")
             if (file.exists(values_file)) {
               sys.source(values_file, envir = load_env)
               if (exists("InputProxy", envir = load_env)) {
@@ -577,7 +577,7 @@ HotShinyApp <- R6::R6Class("HotShinyApp",
             base_path <- system.file(package = "hotShiny")
           }
           load_env <- new.env(parent = ns)
-          dep_file <- file.path(base_path, "R/ir/dependency-tracker.R")
+          dep_file <- file.path(base_path, "R/ir-dependency-tracker.R")
           if (file.exists(dep_file)) {
             sys.source(dep_file, envir = load_env)
           }
@@ -668,7 +668,7 @@ HotShinyApp <- R6::R6Class("HotShinyApp",
         base_path <- system.file(package = "hotShiny")
       }
       load_env <- new.env(parent = asNamespace("hotShiny"))
-      ws_file <- file.path(base_path, "R/server/websocket.R")
+      ws_file <- file.path(base_path, "R/server-websocket.R")
       if (file.exists(ws_file)) {
         sys.source(ws_file, envir = load_env)
         if (exists("create_websocket_server", envir = load_env)) {
@@ -825,167 +825,71 @@ HotShinyApp <- R6::R6Class("HotShinyApp",
 
     # Render UI to HTML
     render_ui = function() {
-      # Try to evaluate UI function in a safe environment
+      # Get UI functions from namespace or load them
+      ns <- asNamespace("hotShiny")
+      base_path <- getwd()
+      
+      # Create environment with all UI functions
+      ui_env <- new.env(parent = globalenv())
+      
+      # Load UI functions from tags.R and inputs.R if available
+      if (file.exists(file.path(base_path, "R/ui-tags.R"))) {
+        sys.source(file.path(base_path, "R/ui-tags.R"), envir = ui_env)
+      }
+      if (file.exists(file.path(base_path, "R/ui-inputs.R"))) {
+        sys.source(file.path(base_path, "R/ui-inputs.R"), envir = ui_env)
+      }
+      if (file.exists(file.path(base_path, "R/ui-outputs.R"))) {
+        sys.source(file.path(base_path, "R/ui-outputs.R"), envir = ui_env)
+      }
+      if (file.exists(file.path(base_path, "R/ui-layout.R"))) {
+        sys.source(file.path(base_path, "R/ui-layout.R"), envir = ui_env)
+      }
+      if (file.exists(file.path(base_path, "R/ui-navigation.R"))) {
+        sys.source(file.path(base_path, "R/ui-navigation.R"), envir = ui_env)
+      }
+      
+      # Also try namespace functions
+      ui_funcs <- c("tag", "tags", "tagList", "div", "span", "p", "h1", "h2", "h3", 
+                    "h4", "h5", "h6", "a", "br", "hr", "pre", "code", "img", "strong", 
+                    "em", "ul", "ol", "li", "HTML", "textInput", "numericInput", 
+                    "textOutput", "plotOutput", "textAreaInput", "passwordInput",
+                    "selectInput", "checkboxInput", "checkboxGroupInput", "radioButtons",
+                    "sliderInput", "dateInput", "dateRangeInput", "actionButton",
+                    "actionLink", "fileInput", "fluidPage", "fluidRow", "fixedPage",
+                    "sidebarLayout", "sidebarPanel", "mainPanel", "wellPanel",
+                    "tabsetPanel", "tabPanel", "navbarPage", "column", "verbatimTextOutput",
+                    "htmlOutput", "uiOutput", "imageOutput", "tableOutput", "dataTableOutput",
+                    "downloadButton", "downloadLink", "icon", "helpText", "titlePanel",
+                    "conditionalPanel", "fillPage", "fillRow", "fillCol")
+      
+      for (fn in ui_funcs) {
+        if (!exists(fn, envir = ui_env, inherits = FALSE)) {
+          if (exists(fn, envir = ns, inherits = FALSE)) {
+            assign(fn, get(fn, envir = ns), envir = ui_env)
+          }
+        }
+      }
+      
+      # Try to evaluate UI function
       ui_result <- tryCatch(
         {
           if (is.function(self$ui)) {
-            # Create an environment with basic HTML tag functions
-            ui_env <- new.env(parent = baseenv()) # Use baseenv to avoid conflicts
-
-            # Add basic tag functions (simplified versions)
-            ui_env$div <- function(...) {
-              args <- list(...)
-              # Check if first argument is a named list (attributes)
-              attrs <- list()
-              children <- list()
-
-              if (length(args) > 0) {
-                # Check if first arg is attributes (named list with no "name" field)
-                first_arg <- args[[1]]
-                # More careful check: attributes should be a named list where all names are non-empty
-                # and it doesn't have "name", "attribs", or "children" fields
-                if (is.list(first_arg) && !is.null(names(first_arg)) &&
-                  length(first_arg) > 0 &&
-                  !("name" %in% names(first_arg)) &&
-                  !("attribs" %in% names(first_arg)) &&
-                  !("children" %in% names(first_arg)) &&
-                  all(names(first_arg) != "")) {
-                  # First arg is attributes
-                  attrs <- first_arg
-                  children <- if (length(args) > 1) args[-1] else list()
-                } else {
-                  # Separate named arguments (attributes) from unnamed arguments (children)
-                  arg_names <- names(args)
-                  if (!is.null(arg_names)) {
-                    # Extract named arguments as attributes
-                    named_indices <- which(arg_names != "")
-                    if (length(named_indices) > 0) {
-                      attrs <- args[named_indices]
-                    }
-                    # Extract unnamed arguments as children
-                    unnamed_indices <- which(arg_names == "" | is.null(arg_names))
-                    if (length(unnamed_indices) > 0) {
-                      children <- args[unnamed_indices]
-                    }
-                  } else {
-                    # All args are children (tags or text)
-                    children <- args
-                  }
-                }
-              }
-
-              list(name = "div", attribs = attrs, children = children)
-            }
-            ui_env$h1 <- function(...) {
-              args <- list(...)
-              attrs <- list()
-              children <- list()
-              
-              # Separate named arguments (attributes) from unnamed arguments (children)
-              arg_names <- names(args)
-              if (!is.null(arg_names) && length(args) > 0) {
-                # Extract named arguments as attributes
-                named_indices <- which(arg_names != "")
-                if (length(named_indices) > 0) {
-                  attrs <- args[named_indices]
-                }
-                # Extract unnamed arguments as children
-                unnamed_indices <- which(arg_names == "" | is.null(arg_names))
-                if (length(unnamed_indices) > 0) {
-                  children_args <- args[unnamed_indices]
-                } else {
-                  children_args <- list()
-                }
-              } else {
-                children_args <- args
-              }
-              
-              # Convert text arguments to character, but preserve tag objects
-              children <- lapply(children_args, function(x) {
-                if (is.character(x)) {
-                  x
-                } else if (is.list(x) && "name" %in% names(x)) {
-                  # It's a tag object, keep it as is
-                  x
-                } else {
-                  as.character(x)
-                }
-              })
-              list(name = "h1", attribs = attrs, children = children)
-            }
-            ui_env$textInput <- function(inputId, label, value = "") {
-              list(
-                name = "input",
-                attribs = list(
-                  type = "text",
-                  id = inputId,
-                  name = inputId,
-                  value = value,
-                  placeholder = label,
-                  `data-input-id` = inputId # Add data-input-id for client-side identification
-                ),
-                children = list()
-              )
-            }
-            ui_env$textOutput <- function(outputId) {
-              list(name = "div", attribs = list(id = outputId, class = "shiny-text-output", `data-output-id` = outputId), children = list())
-            }
-            ui_env$numericInput <- function(inputId, label, value = 0, min = NA, max = NA, step = NA) {
-              attrs <- list(
-                type = "number",
-                id = inputId,
-                name = inputId,
-                value = value,
-                `data-input-id` = inputId
-              )
-              if (!is.na(min)) attrs$min <- min
-              if (!is.na(max)) attrs$max <- max
-              if (!is.na(step)) attrs$step <- step
-              
-              # Wrap in a div with label
-              list(
-                name = "div",
-                attribs = list(class = "form-group"),
-                children = list(
-                  list(name = "label", attribs = list(`for` = inputId), children = list(label)),
-                  list(name = "input", attribs = attrs, children = list())
-                )
-              )
-            }
-            ui_env$plotOutput <- function(outputId, width = "100%", height = "400px") {
-              list(
-                name = "div",
-                attribs = list(
-                  id = outputId,
-                  class = "shiny-plot-output",
-                  `data-output-id` = outputId,
-                  style = paste0("width:", width, "; height:", height, ";")
-                ),
-                children = list()
-              )
-            }
-
-            # Evaluate UI function in this environment
-            # Don't modify the original UI function's environment - create a copy
             ui_func <- self$ui
             environment(ui_func) <- ui_env
             result <- ui_func()
-
-            # Validate result structure
-            if (!is.list(result) || !("name" %in% names(result))) {
-              warning("UI function did not return a valid tag structure")
-              return(list(name = "div", attribs = list(), children = list("UI rendering error")))
-            }
-
             result
           } else {
             self$ui
           }
         },
         error = function(e) {
-          # Fallback: return simple HTML structure
           warning("Error rendering UI: ", conditionMessage(e))
-          list(name = "div", attribs = list(), children = list(paste("Error rendering UI:", conditionMessage(e))))
+          if (exists("div", envir = ui_env)) {
+            get("div", envir = ui_env)(paste("Error rendering UI:", conditionMessage(e)))
+          } else {
+            list(name = "div", attribs = list(), children = list(paste("Error rendering UI:", conditionMessage(e))))
+          }
         }
       )
 
@@ -993,27 +897,47 @@ HotShinyApp <- R6::R6Class("HotShinyApp",
       host <- if (!is.null(self$server_host)) self$server_host else "127.0.0.1"
       port <- if (!is.null(self$server_port)) self$server_port else 3838
 
-      # Convert UI to HTML string
-      # For now, create a basic HTML page
+      # Convert UI to HTML using tag_to_html from tags.R
+      ui_html <- if (exists("tag_to_html", envir = ui_env)) {
+        get("tag_to_html", envir = ui_env)(ui_result)
+      } else {
+        self$ui_to_html(ui_result)
+      }
+
+      # Build complete HTML page with Bootstrap 5
       html <- paste0(
         "<!DOCTYPE html>\n",
-        "<html>\n",
+        "<html lang=\"en\">\n",
         "<head>\n",
         '  <meta charset="UTF-8">\n',
+        '  <meta name="viewport" content="width=device-width, initial-scale=1">\n',
         "  <title>hotShiny App</title>\n",
-        '  <script src="/static/hotshiny.js"></script>\n',
+        "  <!-- Bootstrap 5 CSS -->\n",
+        '  <link rel="stylesheet" href="/static/bootstrap5/bootstrap.min.css">\n',
+        "  <!-- hotShiny styles -->\n",
+        "  <style>\n",
+        "    .shiny-input-container { margin-bottom: 1rem; }\n",
+        "    .shiny-text-output { min-height: 1.5em; }\n",
+        "    .shiny-plot-output { background: #f8f9fa; border: 1px solid #dee2e6; }\n",
+        "    .shiny-plot-output img { max-width: 100%; height: auto; }\n",
+        "    .well { background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 0.375rem; padding: 1rem; margin-bottom: 1rem; }\n",
+        "    .help-block { color: #6c757d; font-size: 0.875em; margin-top: 0.25rem; }\n",
+        "  </style>\n",
+        "</head>\n",
+        "<body>\n",
+        '  <div id="app" class="container-fluid py-3">\n',
+        ui_html,
+        "  </div>\n",
+        "  <!-- Bootstrap 5 JS Bundle -->\n",
+        '  <script src="/static/bootstrap5/bootstrap.bundle.min.js"></script>\n',
+        "  <!-- hotShiny client scripts -->\n",
         '  <script src="/static/websocket-client.js"></script>\n',
         '  <script src="/static/reactive-client.js"></script>\n',
         '  <script src="/static/dom-diff.js"></script>\n',
-        "</head>\n",
-        "<body>\n",
-        '  <div id="app">\n',
-        self$ui_to_html(ui_result),
-        "  </div>\n",
+        '  <script src="/static/inputs.js"></script>\n',
+        '  <script src="/static/hotshiny.js"></script>\n',
         "  <script>\n",
-        "    // hotShiny client auto-initializes when scripts load\n",
-        "    // The HotShiny class is automatically instantiated as global.hotShiny\n",
-        '    console.log("hotShiny scripts loaded, client should auto-initialize");\n',
+        "    console.log('hotShiny app loaded with Bootstrap 5');\n",
         "  </script>\n",
         "</body>\n",
         "</html>\n"
@@ -1022,14 +946,29 @@ HotShinyApp <- R6::R6Class("HotShinyApp",
       html
     },
 
-    # Convert UI object to HTML string (simplified)
+    # Convert UI object to HTML string (fallback method)
     ui_to_html = function(ui_obj) {
       if (is.null(ui_obj)) {
         return("")
       }
 
-      if (is.character(ui_obj)) {
+      # Handle raw HTML
+      if (inherits(ui_obj, "html")) {
+        return(as.character(ui_obj))
+      }
+
+      # Handle character strings
+      if (is.character(ui_obj) && !inherits(ui_obj, "html")) {
+        # Escape HTML entities
+        ui_obj <- gsub("&", "&amp;", ui_obj, fixed = TRUE)
+        ui_obj <- gsub("<", "&lt;", ui_obj, fixed = TRUE)
+        ui_obj <- gsub(">", "&gt;", ui_obj, fixed = TRUE)
         return(ui_obj)
+      }
+
+      # Handle tag lists
+      if (inherits(ui_obj, "shiny.tag.list")) {
+        return(paste(sapply(ui_obj, function(x) self$ui_to_html(x)), collapse = ""))
       }
 
       if (is.list(ui_obj)) {
@@ -1057,8 +996,20 @@ HotShinyApp <- R6::R6Class("HotShinyApp",
           if (length(attrs) > 0 && !is.null(names(attrs))) {
             attr_parts <- character(0)
             for (i in seq_along(attrs)) {
-              if (!is.null(names(attrs)[i]) && names(attrs)[i] != "") {
-                attr_parts <- c(attr_parts, paste0(names(attrs)[i], "=\"", as.character(attrs[[i]]), "\""))
+              attr_name <- names(attrs)[i]
+              attr_value <- attrs[[i]]
+              
+              if (!is.null(attr_name) && attr_name != "" && !is.null(attr_value)) {
+                # Handle logical attributes
+                if (is.logical(attr_value)) {
+                  if (isTRUE(attr_value)) {
+                    attr_parts <- c(attr_parts, attr_name)
+                  }
+                } else {
+                  # Escape attribute values
+                  escaped_value <- gsub('"', "&quot;", as.character(attr_value), fixed = TRUE)
+                  attr_parts <- c(attr_parts, paste0(attr_name, '="', escaped_value, '"'))
+                }
               }
             }
             if (length(attr_parts) > 0) {
@@ -1069,16 +1020,15 @@ HotShinyApp <- R6::R6Class("HotShinyApp",
           children_html <- ""
           if (length(children) > 0) {
             children_html <- paste(sapply(children, function(x) {
-              if (is.character(x)) {
-                x
-              } else {
-                self$ui_to_html(x)
-              }
+              self$ui_to_html(x)
             }), collapse = "")
           }
 
-          # Self-closing tags
-          if (tag_name %in% c("input", "img", "br", "hr", "meta", "link")) {
+          # Self-closing (void) tags
+          void_elements <- c("area", "base", "br", "col", "embed", "hr", "img", "input",
+                            "link", "meta", "param", "source", "track", "wbr")
+          
+          if (tag_name %in% void_elements) {
             return(paste0("<", tag_name, attr_str, " />"))
           } else {
             return(paste0("<", tag_name, attr_str, ">", children_html, "</", tag_name, ">"))

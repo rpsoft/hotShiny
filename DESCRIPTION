@@ -20,5 +20,37 @@ Imports:
 Suggests:
     testthat (>= 3.0.0),
     shinytest2 (>= 0.1.0),
-    base64enc (>= 0.1.0)
+    base64enc (>= 0.1.0),
+    markdown
 RoxygenNote: 7.2.0
+Collate: 
+    'ir-node-types.R'
+    'ir-dependency-tracker.R'
+    'ir-graph-builder.R'
+    'ir-serializer.R'
+    'runtime-state-manager.R'
+    'runtime-versioning.R'
+    'runtime-executor.R'
+    'core-reactive.R'
+    'core-observe.R'
+    'core-render.R'
+    'core-values.R'
+    'core-strict-mode.R'
+    'server-message-handler.R'
+    'server-session-manager.R'
+    'server-websocket.R'
+    'hot-reload-file-watcher.R'
+    'hot-reload-graph-diff.R'
+    'hot-reload-state-preservation.R'
+    'hot-reload-reload-engine.R'
+    'debug-time-travel.R'
+    'ui-tags.R'
+    'ui-inputs.R'
+    'ui-outputs.R'
+    'ui-layout.R'
+    'ui-navigation.R'
+    'ui-modals.R'
+    'ui-updates.R'
+    'ui-dynamic.R'
+    'app.R'
+    'zzz.R'

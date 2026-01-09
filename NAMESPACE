@@ -1,19 +1,289 @@
-# Export user-facing functions
-export(
-  app,
-  runApp,
-  enable_hot_reload,
-  enable_strict_mode,
-  disable_strict_mode,
-  enable_time_travel,
-  disable_time_travel,
-  visualize_graph
-)
+# hotShiny NAMESPACE
+# Auto-generated - do not edit by hand
 
-# Import required packages
-import(R6)
-import(rlang)
-import(httpuv)
-import(later)
-import(jsonlite)
-import(digest)
+# ============================================================================
+# Core Application Functions
+# ============================================================================
+export(app)
+export(runApp)
+export(enable_hot_reload)
+export(enable_strict_mode)
+export(disable_strict_mode)
+export(enable_time_travel)
+export(disable_time_travel)
+export(visualize_graph)
+
+# ============================================================================
+# HTML Tags System (R/ui-tags.R)
+# ============================================================================
+export(tag)
+export(tags)
+export(tagList)
+export(tagAppendAttributes)
+export(tagHasAttribute)
+export(tagGetAttribute)
+export(tagAppendChild)
+export(tagAppendChildren)
+export(tagSetChildren)
+export(tagInsertChildren)
+export(HTML)
+export(is.HTML)
+export(validateCssUnit)
+export(withTags)
+export(singleton)
+export(is.singleton)
+export(tag_to_html)
+export(htmlEscape)
+
+# Direct tag functions
+export(div)
+export(span)
+export(p)
+export(h1)
+export(h2)
+export(h3)
+export(h4)
+export(h5)
+export(h6)
+export(a)
+export(br)
+export(hr)
+export(pre)
+export(code)
+export(img)
+export(strong)
+export(em)
+export(blockquote)
+export(ul)
+export(ol)
+export(li)
+
+# Include functions
+export(includeHTML)
+export(includeText)
+export(includeMarkdown)
+export(includeCSS)
+export(includeScript)
+export(markdown)
+export(htmlTemplate)
+
+# Dependencies
+export(htmlDependency)
+export(bootstrapLib)
+export(suppressDependencies)
+
+# ============================================================================
+# UI Input Functions (R/ui-inputs.R)
+# ============================================================================
+# Text inputs
+export(textInput)
+export(textAreaInput)
+export(passwordInput)
+export(numericInput)
+
+# Selection inputs
+export(selectInput)
+export(selectizeInput)
+export(varSelectInput)
+export(varSelectizeInput)
+export(radioButtons)
+export(checkboxInput)
+export(checkboxGroupInput)
+
+# Date inputs
+export(dateInput)
+export(dateRangeInput)
+
+# Slider input
+export(sliderInput)
+export(animationOptions)
+
+# Action inputs
+export(actionButton)
+export(actionLink)
+export(submitButton)
+export(fileInput)
+
+# Icon
+export(icon)
+
+# ============================================================================
+# UI Output Functions (R/ui-outputs.R)
+# ============================================================================
+export(textOutput)
+export(verbatimTextOutput)
+export(htmlOutput)
+export(uiOutput)
+export(plotOutput)
+export(imageOutput)
+export(tableOutput)
+export(dataTableOutput)
+export(downloadButton)
+export(downloadLink)
+export(outputOptions)
+
+# ============================================================================
+# UI Layout Functions (R/ui-layout.R)
+# ============================================================================
+# Page functions
+export(fluidPage)
+export(fluidRow)
+export(fixedPage)
+export(fixedRow)
+export(fillPage)
+export(bootstrapPage)
+export(basicPage)
+
+# Grid functions
+export(column)
+export(fillRow)
+export(fillCol)
+export(flowLayout)
+export(splitLayout)
+export(verticalLayout)
+
+# Panel functions
+export(sidebarLayout)
+export(sidebarPanel)
+export(mainPanel)
+export(wellPanel)
+export(absolutePanel)
+export(fixedPanel)
+export(conditionalPanel)
+export(inputPanel)
+export(titlePanel)
+export(helpText)
+
+# MathJax
+export(withMathJax)
+
+# ============================================================================
+# UI Navigation Functions (R/ui-navigation.R)
+# ============================================================================
+export(tabsetPanel)
+export(tabPanel)
+export(tabPanelBody)
+export(navbarPage)
+export(navbarMenu)
+export(navlistPanel)
+
+# ============================================================================
+# Modal and Notification Functions (R/ui-modals.R)
+# ============================================================================
+export(modalDialog)
+export(modalButton)
+export(showModal)
+export(removeModal)
+export(urlModal)
+export(showNotification)
+export(removeNotification)
+export(Progress)
+export(withProgress)
+export(setProgress)
+export(incProgress)
+export(getDefaultReactiveDomain)
+
+# ============================================================================
+# Update Functions (R/ui-updates.R)
+# ============================================================================
+export(updateTextInput)
+export(updateTextAreaInput)
+export(updateNumericInput)
+export(updateSelectInput)
+export(updateSelectizeInput)
+export(updateCheckboxInput)
+export(updateCheckboxGroupInput)
+export(updateRadioButtons)
+export(updateDateInput)
+export(updateDateRangeInput)
+export(updateSliderInput)
+export(updateActionButton)
+export(updateActionLink)
+export(updateTabsetPanel)
+export(updateNavbarPage)
+export(updateNavlistPanel)
+export(updateQueryString)
+export(getQueryString)
+export(getUrlHash)
+export(updateVarSelectInput)
+export(updateVarSelectizeInput)
+
+# ============================================================================
+# Dynamic UI Functions (R/ui-dynamic.R)
+# ============================================================================
+export(insertUI)
+export(removeUI)
+export(insertTab)
+export(prependTab)
+export(appendTab)
+export(removeTab)
+export(showTab)
+export(hideTab)
+
+# ============================================================================
+# Core Reactive Functions (existing)
+# ============================================================================
+export(reactive)
+export(observe)
+export(observeEvent)
+export(reactiveValues)
+export(renderText)
+export(renderPlot)
+export(renderTable)
+export(renderDataTable)
+export(renderUI)
+
+# ============================================================================
+# Render Functions (additional)
+# ============================================================================
+export(renderPrint)
+export(renderImage)
+export(downloadHandler)
+export(renderCachedPlot)
+export(createRenderFunction)
+export(sizeGrowthRatio)
+
+# ============================================================================
+# Imports - Use importFrom to avoid conflicts
+# ============================================================================
+# R6 - for classes
+importFrom(R6, R6Class)
+
+# rlang - for expression handling
+importFrom(rlang, enquo, get_expr, is_call, call_name, as_string, is_symbol)
+
+# httpuv - for web server
+importFrom(httpuv, startServer, stopServer, service)
+
+# later - for async operations
+importFrom(later, later)
+
+# jsonlite - for JSON handling
+importFrom(jsonlite, toJSON, fromJSON)
+
+# digest - for hashing
+importFrom(digest, digest)
+
+# Base packages
+importFrom(tools, file_ext)
+importFrom(utils, head, tail, packageVersion)
+importFrom(grDevices, png, dev.off)
+importFrom(stats, setNames)
+
+# ============================================================================
+# S3 Methods
+# ============================================================================
+S3method("$", InputProxy)
+S3method("$", ReactiveValues)
+S3method("$<-", ReactiveValues)
+S3method("[[", ReactiveValues)
+S3method("[[<-", ReactiveValues)
+S3method("$", OutputProxy)
+S3method("$<-", OutputProxy)
+S3method(print, shiny.tag)
+S3method(as.character, shiny.tag)
+S3method(c, shiny.tag)
+S3method(print, shiny.tag.list)
+S3method(as.character, shiny.tag.list)
+S3method(c, shiny.tag.list)
+S3method("$", shiny.tags)
