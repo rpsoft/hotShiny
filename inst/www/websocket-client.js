@@ -3,6 +3,12 @@
  * Handles WebSocket communication with server
  */
 
+// Debug logging - set window.HOTSHINY_DEBUG = true to enable
+const DEBUG = () => window.HOTSHINY_DEBUG === true;
+const logDebug = (...args) => { if (DEBUG()) console.log(...args); };
+const logWarn = (...args) => { if (DEBUG()) console.warn(...args); };
+const logError = (...args) => console.error(...args);
+
 class WebSocketClient {
   constructor(url) {
     this.url = url;
@@ -18,11 +24,11 @@ class WebSocketClient {
   
   connect() {
     try {
-      console.log(`[WebSocket] Connecting to ${this.url}...`);
+      logDebug(`[WebSocket] Connecting to ${this.url}...`);
       this.ws = new WebSocket(this.url);
       
       this.ws.onopen = () => {
-        console.log('[WebSocket] Connection opened');
+        logDebug('[WebSocket] Connection opened');
         this.connected = true;
         this.reconnectAttempts = 0;
         this.onOpen();
@@ -33,30 +39,30 @@ class WebSocketClient {
       };
       
       this.ws.onerror = (error) => {
-        console.error('[WebSocket] Error:', error);
+        logError('[WebSocket] Error:', error);
         this.onError(error);
       };
       
       this.ws.onclose = (event) => {
-        console.log(`[WebSocket] Connection closed (code: ${event.code}, reason: ${event.reason || 'none'})`);
+        logDebug(`[WebSocket] Connection closed (code: ${event.code}, reason: ${event.reason || 'none'})`);
         this.connected = false;
         this.onClose();
         this.attemptReconnect();
       };
     } catch (error) {
-      console.error('[WebSocket] Connection error:', error);
+      logError('[WebSocket] Connection error:', error);
       this.attemptReconnect();
     }
   }
   
   onOpen() {
-    console.log('WebSocket connected');
+    logDebug('[WebSocket] connected');
     // Send ping to keep connection alive
     this.startPingInterval();
   }
   
   onClose() {
-    console.log('WebSocket disconnected');
+    logDebug('[WebSocket] disconnected');
     this.stopPingInterval();
   }
   
@@ -67,22 +73,22 @@ class WebSocketClient {
   handleMessage(event) {
     try {
       const message = JSON.parse(event.data);
-      console.log(`[WebSocket] Received message type: ${message.type}`, message.data);
+      logDebug(`[WebSocket] Received message type: ${message.type}`, message.data);
       const handler = this.messageHandlers.get(message.type);
       
       if (handler) {
         handler(message);
       } else {
-        console.warn(`[WebSocket] No handler for message type: ${message.type}`);
+        logWarn(`[WebSocket] No handler for message type: ${message.type}`);
       }
     } catch (error) {
-      console.error('[WebSocket] Error handling message:', error, event.data);
+      logError('[WebSocket] Error handling message:', error, event.data);
     }
   }
   
   send(type, data) {
     if (!this.connected || !this.ws) {
-      console.warn('[WebSocket] Not connected, cannot send message:', type);
+      logWarn('[WebSocket] Not connected, cannot send message:', type);
       return;
     }
     
@@ -94,10 +100,10 @@ class WebSocketClient {
     
     try {
       const jsonMessage = JSON.stringify(message);
-      console.log(`[WebSocket] Sending message type: ${type}`, data);
+      logDebug(`[WebSocket] Sending message type: ${type}`, data);
       this.ws.send(jsonMessage);
     } catch (error) {
-      console.error('[WebSocket] Error sending message:', error);
+      logError('[WebSocket] Error sending message:', error);
     }
   }
   
@@ -114,7 +120,7 @@ class WebSocketClient {
     this.reconnectAttempts++;
     const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
     
-    console.log(`Attempting to reconnect in ${delay}ms (attempt ${this.reconnectAttempts})`);
+    logDebug(`[WebSocket] Attempting to reconnect in ${delay}ms (attempt ${this.reconnectAttempts})`);
     
     setTimeout(() => {
       this.connect();

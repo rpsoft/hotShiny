@@ -249,7 +249,7 @@ RenderProxy <- R6::R6Class("RenderProxy",
             self$pending_deps <- NULL
             self$pending_source <- NULL
             self$pending_env <- NULL
-            cat("[RenderProxy] Successfully registered node: ", node$id, ", output_name=", node$output_name, "\n", file = stderr())
+            log_debug("[RenderProxy] Successfully registered node: ", node$id, ", output_name=", node$output_name, "\n", file = stderr())
           },
           error = function(e) {
             warning("Error registering render node for ", name, ": ", conditionMessage(e))

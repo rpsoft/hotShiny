@@ -5,6 +5,11 @@
 
 (function(global) {
   'use strict';
+  
+  // Debug logging - uses global flag from hotshiny.js
+  const DEBUG = () => window.HOTSHINY_DEBUG === true;
+  const logDebug = (...args) => { if (DEBUG()) console.log(...args); };
+  const logWarn = (...args) => { if (DEBUG()) console.warn(...args); };
 
   // ========================================================================
   // Input Binding Base Class
@@ -668,13 +673,13 @@
     sendValue(inputId, value) {
       // Use hotShiny WebSocket client to send value
       if (global.hotShiny && global.hotShiny.wsClient && global.hotShiny.wsClient.connected) {
-        console.log(`[InputManager] Sending: ${inputId} = `, value);
+        logDebug(`[InputManager] Sending: ${inputId} = `, value);
         global.hotShiny.wsClient.send('user_input', {
           input_name: inputId,
           value: value
         });
       } else {
-        console.warn(`[InputManager] WebSocket not connected, cannot send ${inputId}`);
+        logWarn(`[InputManager] WebSocket not connected, cannot send ${inputId}`);
       }
     }
 

@@ -74,7 +74,7 @@ ReactiveExecutor <- R6::R6Class("ReactiveExecutor",
 
     # Execute the graph
     execute = function() {
-      cat("[Executor] execute() called\n", file = stderr())
+      log_debug("[Executor] execute() called\n", file = stderr())
       # Get graph from builder if available (graph may be updated after executor creation)
       graph_to_use <- self$graph
       if (!is.null(self$builder)) {
@@ -83,29 +83,29 @@ ReactiveExecutor <- R6::R6Class("ReactiveExecutor",
           graph_to_use <- graph_from_builder
           # Update executor's graph reference to latest
           self$graph <- graph_to_use
-          cat("[Executor] execute() using graph from builder, updated reference\n", file = stderr())
+          log_debug("[Executor] execute() using graph from builder, updated reference\n", file = stderr())
         }
       }
 
       # Check graph
       if (is.null(graph_to_use)) {
-        cat("[Executor] execute() ERROR: graph is NULL!\n", file = stderr())
+        log_debug("[Executor] execute() ERROR: graph is NULL!\n", file = stderr())
         return(invisible(NULL))
       }
       all_nodes_check <- graph_to_use$get_all_nodes()
-      cat("[Executor] execute() graph has", length(all_nodes_check), "nodes\n", file = stderr())
+      log_debug("[Executor] execute() graph has", length(all_nodes_check), "nodes\n", file = stderr())
       # Get topological sort
       execution_order <- graph_to_use$topological_sort()
-      cat("[Executor] Execution order:", paste(execution_order, collapse = ", "), " (length:", length(execution_order), ")\n", file = stderr())
+      log_debug("[Executor] Execution order:", paste(execution_order, collapse = ", "), " (length:", length(execution_order), ")\n", file = stderr())
 
       # If execution order is empty, log why
       if (length(execution_order) == 0) {
-        cat("[Executor] WARNING: Execution order is empty! Graph nodes:", length(all_nodes_check), ", Edges:", length(graph_to_use$edges), "\n", file = stderr())
+        log_debug("[Executor] WARNING: Execution order is empty! Graph nodes:", length(all_nodes_check), ", Edges:", length(graph_to_use$edges), "\n", file = stderr())
         if (length(all_nodes_check) > 0) {
-          cat("[Executor] Node IDs:", paste(sapply(all_nodes_check, function(n) if (inherits(n, "ReactiveNode")) n$id else if (is.list(n)) n$id else "unknown"), collapse = ", "), "\n", file = stderr())
+          log_debug("[Executor] Node IDs:", paste(sapply(all_nodes_check, function(n) if (inherits(n, "ReactiveNode")) n$id else if (is.list(n)) n$id else "unknown"), collapse = ", "), "\n", file = stderr())
         }
         if (length(graph_to_use$edges) > 0) {
-          cat("[Executor] Edge from/to:", paste(sapply(graph_to_use$edges, function(e) paste(e$from, "->", e$to)), collapse = ", "), "\n", file = stderr())
+          log_debug("[Executor] Edge from/to:", paste(sapply(graph_to_use$edges, function(e) paste(e$from, "->", e$to)), collapse = ", "), "\n", file = stderr())
         }
       }
 
@@ -114,39 +114,39 @@ ReactiveExecutor <- R6::R6Class("ReactiveExecutor",
       for (node_id in execution_order) {
         node <- graph_to_use$get_node(node_id)
         if (is.null(node)) {
-          cat("[Executor] Node", node_id, "not found\n", file = stderr())
+          log_debug("[Executor] Node", node_id, "not found\n", file = stderr())
           next
         }
 
         # Check if node is dirty or needs execution
         should_exec <- self$should_execute(node)
-        cat("[Executor] Node", node_id, "type=", node$type, ", should_execute=", should_exec, "\n", file = stderr())
+        log_debug("[Executor] Node", node_id, "type=", node$type, ", should_execute=", should_exec, "\n", file = stderr())
         if (should_exec) {
-          cat("[Executor] Executing node", node_id, "\n", file = stderr())
+          log_debug("[Executor] Executing node", node_id, "\n", file = stderr())
           self$execute_node(node)
           executed_count <- executed_count + 1
         }
       }
 
-      cat("[Executor] execute() executed", executed_count, "nodes\n", file = stderr())
+      log_debug("[Executor] execute() executed", executed_count, "nodes\n", file = stderr())
 
       # Clear dirty flags AFTER all execution is complete
       self$state_manager$clear_all_dirty()
-      cat("[Executor] execute() completed, cleared dirty flags\n", file = stderr())
+      log_debug("[Executor] execute() completed, cleared dirty flags\n", file = stderr())
     },
 
     # Check if node should be executed
     should_execute = function(node) {
       # Always execute if dirty
       if (self$state_manager$is_dirty(node$id)) {
-        cat("[Executor] should_execute: node", node$id, "is dirty\n", file = stderr())
+        log_debug("[Executor] should_execute: node", node$id, "is dirty\n", file = stderr())
         return(TRUE)
       }
 
       # Check if any dependency is dirty
       for (dep_id in node$deps) {
         if (self$state_manager$is_dirty(dep_id)) {
-          cat("[Executor] should_execute: node", node$id, "has dirty dependency", dep_id, "\n", file = stderr())
+          log_debug("[Executor] should_execute: node", node$id, "has dirty dependency", dep_id, "\n", file = stderr())
           return(TRUE)
         }
       }
@@ -156,12 +156,12 @@ ReactiveExecutor <- R6::R6Class("ReactiveExecutor",
       if (inherits(node, "RenderNode")) {
         current_value <- self$state_manager$get_value(node$id)
         if (is.null(current_value) || (is.character(current_value) && trimws(current_value) == "")) {
-          cat("[Executor] should_execute: node", node$id, "is RenderNode with no value, executing for initial render\n", file = stderr())
+          log_debug("[Executor] should_execute: node", node$id, "is RenderNode with no value, executing for initial render\n", file = stderr())
           return(TRUE)
         }
       }
 
-      cat("[Executor] should_execute: node", node$id, "does NOT need execution\n", file = stderr())
+      log_debug("[Executor] should_execute: node", node$id, "does NOT need execution\n", file = stderr())
       return(FALSE)
 
       # For observers, check if they need to run
@@ -180,7 +180,7 @@ ReactiveExecutor <- R6::R6Class("ReactiveExecutor",
 
     # Execute a single node
     execute_node = function(node) {
-      cat("[Executor] execute_node: executing", node$id, "type=", node$type, "\n", file = stderr())
+      log_debug("[Executor] execute_node: executing", node$id, "type=", node$type, "\n", file = stderr())
       tryCatch(
         {
           self$state_manager$set_execution_state(node$id, "executing")
@@ -189,12 +189,12 @@ ReactiveExecutor <- R6::R6Class("ReactiveExecutor",
             "input" = {
               # Input nodes are set externally
               val <- self$state_manager$get_value(node$id)
-              cat("[Executor] execute_node: input node", node$id, "value='", val, "'\n", file = stderr())
+              log_debug("[Executor] execute_node: input node", node$id, "value='", val, "'\n", file = stderr())
               val
             },
             "reactive" = {
               val <- self$execute_reactive(node)
-              cat("[Executor] execute_node: reactive node", node$id, "returned value='", if (is.null(val)) "NULL" else val, "'\n", file = stderr())
+              log_debug("[Executor] execute_node: reactive node", node$id, "returned value='", if (is.null(val)) "NULL" else val, "'\n", file = stderr())
               val
             },
             "observe" = {
@@ -203,17 +203,17 @@ ReactiveExecutor <- R6::R6Class("ReactiveExecutor",
             },
             "render" = {
               val <- self$execute_render(node)
-              cat("[Executor] execute_node: render node", node$id, "returned value='", if (is.null(val)) "NULL" else val, "'\n", file = stderr())
+              log_debug("[Executor] execute_node: render node", node$id, "returned value='", if (is.null(val)) "NULL" else val, "'\n", file = stderr())
               val
             },
             "output" = {
               # Output nodes get values from render nodes
               val <- self$state_manager$get_value(node$id)
-              cat("[Executor] execute_node: output node", node$id, "value='", if (is.null(val)) "NULL" else val, "'\n", file = stderr())
+              log_debug("[Executor] execute_node: output node", node$id, "value='", if (is.null(val)) "NULL" else val, "'\n", file = stderr())
               val
             },
             {
-              cat("[Executor] execute_node: WARNING - unknown node type:", node$type, "\n", file = stderr())
+              log_debug("[Executor] execute_node: WARNING - unknown node type:", node$type, "\n", file = stderr())
               warning("Unknown node type: ", node$type)
               NULL
             }
@@ -222,9 +222,9 @@ ReactiveExecutor <- R6::R6Class("ReactiveExecutor",
           # Store value if not NULL
           if (!is.null(value)) {
             self$state_manager$set_value(node$id, value)
-            cat("[Executor] execute_node: stored value '", value, "' for", node$id, "\n", file = stderr())
+            log_debug("[Executor] execute_node: stored value '", value, "' for", node$id, "\n", file = stderr())
           } else {
-            cat("[Executor] execute_node: value is NULL for", node$id, ", not storing\n", file = stderr())
+            log_debug("[Executor] execute_node: value is NULL for", node$id, ", not storing\n", file = stderr())
           }
 
           # Don't clear dirty flag here - let execute() clear all at once
@@ -309,17 +309,17 @@ ReactiveExecutor <- R6::R6Class("ReactiveExecutor",
     # Execute a reactive expression
     execute_reactive = function(node) {
       if (is.null(node$expr)) {
-        cat("[Executor] execute_reactive: node", node$id, "has no expr\n", file = stderr())
+        log_debug("[Executor] execute_reactive: node", node$id, "has no expr\n", file = stderr())
         return(NULL)
       }
 
-      cat("[Executor] execute_reactive: executing node", node$id, "\n", file = stderr())
+      log_debug("[Executor] execute_reactive: executing node", node$id, "\n", file = stderr())
 
       # Reconstruct expression from AST
       # Get ast_to_expr function
       ast_to_expr_fn <- self$get_helper_function("ast_to_expr")
       expr <- ast_to_expr_fn(node$expr)
-      cat("[Executor] execute_reactive: reconstructed expr:", paste(deparse(expr), collapse = " "), "\n", file = stderr())
+      log_debug("[Executor] execute_reactive: reconstructed expr:", paste(deparse(expr), collapse = " "), "\n", file = stderr())
 
       # Get dependency values
       # Separate input dependencies from reactive dependencies
@@ -414,7 +414,7 @@ ReactiveExecutor <- R6::R6Class("ReactiveExecutor",
       if (!is.null(input_proxy)) {
         assign("input", input_proxy, envir = eval_env)
       } else {
-        cat("[Executor] execute_reactive: WARNING - input proxy is NULL, using dummy\n", file = stderr())
+        log_debug("[Executor] execute_reactive: WARNING - input proxy is NULL, using dummy\n", file = stderr())
         # If we can't create input proxy, create a dummy one that returns empty strings
         # This prevents "object 'input' not found" errors
         dummy_input <- structure(
@@ -424,7 +424,7 @@ ReactiveExecutor <- R6::R6Class("ReactiveExecutor",
         assign("input", dummy_input, envir = eval_env)
       }
 
-      cat("[Executor] execute_reactive: evaluating expr:", paste(deparse(expr), collapse = " "), "\n", file = stderr())
+      log_debug("[Executor] execute_reactive: evaluating expr:", paste(deparse(expr), collapse = " "), "\n", file = stderr())
       # Evaluate expression with error handling
       result <- tryCatch(
         {
@@ -434,7 +434,7 @@ ReactiveExecutor <- R6::R6Class("ReactiveExecutor",
           # Catch all errors and return empty string
           # This prevents errors from propagating to the client
           error_msg <- conditionMessage(e)
-          cat("[Executor] execute_reactive: ERROR evaluating:", error_msg, "\n", file = stderr())
+          log_debug("[Executor] execute_reactive: ERROR evaluating:", error_msg, "\n", file = stderr())
 
           # Log warning for debugging, but don't send to client
           if (grepl("object.*input", error_msg, ignore.case = TRUE)) {
@@ -453,7 +453,7 @@ ReactiveExecutor <- R6::R6Class("ReactiveExecutor",
         result <- ""
       }
 
-      cat("[Executor] execute_reactive: result='", result, "'\n", file = stderr())
+      log_debug("[Executor] execute_reactive: result='", result, "'\n", file = stderr())
 
       # Store result in state manager
       self$state_manager$set_value(node$id, result)
@@ -503,32 +503,32 @@ ReactiveExecutor <- R6::R6Class("ReactiveExecutor",
     execute_render = function(node) {
       # Debug: Check if node has render_type field
       render_type_val <- tryCatch(node$render_type, error = function(e) {
-        cat("[Executor] execute_render: ERROR accessing node$render_type:", conditionMessage(e), "\n", file = stderr())
+        log_debug("[Executor] execute_render: ERROR accessing node$render_type:", conditionMessage(e), "\n", file = stderr())
         NULL
       })
-      cat("[Executor] execute_render: Starting render for node", node$id, "render_type=", if (is.null(render_type_val)) "NULL" else render_type_val, "\n", file = stderr())
-      cat("[Executor] execute_render: Node class:", class(node)[1], "\n", file = stderr())
+      log_debug("[Executor] execute_render: Starting render for node", node$id, "render_type=", if (is.null(render_type_val)) "NULL" else render_type_val, "\n", file = stderr())
+      log_debug("[Executor] execute_render: Node class:", class(node)[1], "\n", file = stderr())
       if (inherits(node, "RenderNode")) {
-        cat("[Executor] execute_render: Node IS a RenderNode\n", file = stderr())
+        log_debug("[Executor] execute_render: Node IS a RenderNode\n", file = stderr())
       } else {
-        cat("[Executor] execute_render: Node is NOT a RenderNode, class:", paste(class(node), collapse = ", "), "\n", file = stderr())
+        log_debug("[Executor] execute_render: Node is NOT a RenderNode, class:", paste(class(node), collapse = ", "), "\n", file = stderr())
       }
       if (is.null(node$expr)) {
-        cat("[Executor] execute_render: node", node$id, "has no expr\n", file = stderr())
+        log_debug("[Executor] execute_render: node", node$id, "has no expr\n", file = stderr())
         return(NULL)
       }
 
       # Reconstruct expression
       ast_to_expr_fn <- self$get_helper_function("ast_to_expr")
       expr <- ast_to_expr_fn(node$expr)
-      cat("[Executor] execute_render: Reconstructed expression for node", node$id, "\n", file = stderr())
+      log_debug("[Executor] execute_render: Reconstructed expression for node", node$id, "\n", file = stderr())
 
       # Get dependency values
       # Separate input dependencies from reactive dependencies
       input_deps <- character(0)
       reactive_deps <- list()
 
-      cat("[Executor] execute_render: node deps:", paste(node$deps, collapse = ", "), "\n", file = stderr())
+      log_debug("[Executor] execute_render: node deps:", paste(node$deps, collapse = ", "), "\n", file = stderr())
 
       for (dep_id in node$deps) {
         if (grepl("^input\\.", dep_id)) {
@@ -610,20 +610,20 @@ ReactiveExecutor <- R6::R6Class("ReactiveExecutor",
           }
           assign(n, reactive_fn, envir = eval_env)
         })
-        cat("[Executor] execute_render: added reactive function", name, "->", if (is.null(dep_id)) "NULL" else dep_id, "\n", file = stderr())
+        log_debug("[Executor] execute_render: added reactive function", name, "->", if (is.null(dep_id)) "NULL" else dep_id, "\n", file = stderr())
       }
 
       # CRITICAL: Always check expression for function calls and ensure they're available
       # This handles cases where reactive_sources registry might not be populated yet,
       # or where reactive_deps has entries with wrong names (like reactive_0 instead of greeting)
       expr_str <- paste(deparse(expr), collapse = " ")
-      cat("[Executor] execute_render: expression string:", expr_str, "\n", file = stderr())
+      log_debug("[Executor] execute_render: expression string:", expr_str, "\n", file = stderr())
 
       # Extract function calls from expression (simple pattern matching)
       # Look for patterns like greeting(), reactive_0(), etc.
       function_calls <- regmatches(expr_str, gregexpr("\\b[a-zA-Z_][a-zA-Z0-9_]*\\(\\)", expr_str))[[1]]
       function_names <- gsub("\\(\\)", "", function_calls)
-      cat("[Executor] execute_render: found function calls in expression:", paste(function_names, collapse = ", "), "\n", file = stderr())
+      log_debug("[Executor] execute_render: found function calls in expression:", paste(function_names, collapse = ", "), "\n", file = stderr())
 
       # For each function call, ensure it's available in eval_env
       app <- self$get_app()
@@ -636,19 +636,19 @@ ReactiveExecutor <- R6::R6Class("ReactiveExecutor",
         )
         if (!is.null(reactive_sources) && is.environment(reactive_sources)) {
           reactive_var_names <- ls(envir = reactive_sources, all.names = TRUE)
-          cat("[Executor] execute_render: reactive_sources registry has:", paste(reactive_var_names, collapse = ", "), "\n", file = stderr())
+          log_debug("[Executor] execute_render: reactive_sources registry has:", paste(reactive_var_names, collapse = ", "), "\n", file = stderr())
 
           for (func_name in function_names) {
             # Skip if already in eval_env
             if (exists(func_name, envir = eval_env, inherits = FALSE)) {
-              cat("[Executor] execute_render: function", func_name, "already in eval_env\n", file = stderr())
+              log_debug("[Executor] execute_render: function", func_name, "already in eval_env\n", file = stderr())
               next
             }
 
             # Check if this function name is in reactive_sources
             if (exists(func_name, envir = reactive_sources, inherits = FALSE)) {
               func_node_id <- get(func_name, envir = reactive_sources, inherits = FALSE)
-              cat("[Executor] execute_render: found", func_name, "in reactive_sources ->", func_node_id, "\n", file = stderr())
+              log_debug("[Executor] execute_render: found", func_name, "in reactive_sources ->", func_node_id, "\n", file = stderr())
               # Add function to eval_env
               local({
                 fname <- func_name
@@ -663,9 +663,9 @@ ReactiveExecutor <- R6::R6Class("ReactiveExecutor",
                 }
                 assign(fname, reactive_fn, envir = eval_env)
               })
-              cat("[Executor] execute_render: added function", func_name, "to eval_env\n", file = stderr())
+              log_debug("[Executor] execute_render: added function", func_name, "to eval_env\n", file = stderr())
             } else {
-              cat("[Executor] execute_render: WARNING - function", func_name, "not found in reactive_sources\n", file = stderr())
+              log_debug("[Executor] execute_render: WARNING - function", func_name, "not found in reactive_sources\n", file = stderr())
             }
           }
         }
@@ -683,29 +683,29 @@ ReactiveExecutor <- R6::R6Class("ReactiveExecutor",
           },
           error = function(e) NULL
         )
-        cat("[Executor] execute_render: input proxy test - input$name = '", if (is.null(test_input)) "NULL" else test_input, "'\n", file = stderr())
+        log_debug("[Executor] execute_render: input proxy test - input$name = '", if (is.null(test_input)) "NULL" else test_input, "'\n", file = stderr())
       } else {
-        cat("[Executor] execute_render: WARNING - input proxy is NULL, using dummy\n", file = stderr())
+        log_debug("[Executor] execute_render: WARNING - input proxy is NULL, using dummy\n", file = stderr())
         # If we can't create input proxy, create a dummy one that returns empty strings
         # This prevents "object 'input' not found" errors
         dummy_input <- structure(list(), class = "InputProxy")
         assign("input", dummy_input, envir = eval_env)
       }
 
-      cat("[Executor] execute_render: evaluating expr:", paste(deparse(expr), collapse = " "), "\n", file = stderr())
-      cat("[Executor] execute_render: available functions in eval_env:", paste(ls(envir = eval_env), collapse = ", "), "\n", file = stderr())
+      log_debug("[Executor] execute_render: evaluating expr:", paste(deparse(expr), collapse = " "), "\n", file = stderr())
+      log_debug("[Executor] execute_render: available functions in eval_env:", paste(ls(envir = eval_env), collapse = ", "), "\n", file = stderr())
       
       # Get render_type from node or metadata
       render_type <- node$render_type
       if (is.null(render_type) && !is.null(node$metadata) && !is.null(node$metadata$render_type)) {
         render_type <- node$metadata$render_type
-        cat("[Executor] execute_render: Got render_type from metadata: '", render_type, "'\n", file = stderr())
+        log_debug("[Executor] execute_render: Got render_type from metadata: '", render_type, "'\n", file = stderr())
       }
-      cat("[Executor] execute_render: node render_type = '", render_type, "' (class: ", class(render_type), ")\n", file = stderr())
+      log_debug("[Executor] execute_render: node render_type = '", render_type, "' (class: ", class(render_type), ")\n", file = stderr())
       
       # For plot types, we need to capture the plot directly, so handle separately
       if (!is.null(render_type) && render_type == "plot") {
-        cat("[Executor] execute_render: Processing plot render for node", node$id, "\n", file = stderr())
+        log_debug("[Executor] execute_render: Processing plot render for node", node$id, "\n", file = stderr())
         # Capture plot as PNG and convert to base64
         temp_file <- tempfile(fileext = ".png")
         result <- tryCatch({
@@ -713,7 +713,7 @@ ReactiveExecutor <- R6::R6Class("ReactiveExecutor",
           width <- 400
           height <- 400
           if (!is.null(node$metadata) && !is.null(node$metadata$outputArgs)) {
-            cat("[Executor] execute_render: Found outputArgs in metadata\n", file = stderr())
+            log_debug("[Executor] execute_render: Found outputArgs in metadata\n", file = stderr())
             if (!is.null(node$metadata$outputArgs$width) && node$metadata$outputArgs$width != "auto") {
               width <- as.numeric(gsub("px", "", as.character(node$metadata$outputArgs$width)))
             }
@@ -721,7 +721,7 @@ ReactiveExecutor <- R6::R6Class("ReactiveExecutor",
               height <- as.numeric(gsub("px", "", as.character(node$metadata$outputArgs$height)))
             }
           }
-          cat("[Executor] execute_render: Plot dimensions:", width, "x", height, "\n", file = stderr())
+          log_debug("[Executor] execute_render: Plot dimensions:", width, "x", height, "\n", file = stderr())
           
           # Close any existing graphics devices (except null device)
           while (dev.cur() > 1) {
@@ -729,61 +729,61 @@ ReactiveExecutor <- R6::R6Class("ReactiveExecutor",
           }
           
           # Open PNG device
-          cat("[Executor] execute_render: Opening PNG device:", temp_file, "\n", file = stderr())
+          log_debug("[Executor] execute_render: Opening PNG device:", temp_file, "\n", file = stderr())
           png(temp_file, width = width, height = height, units = "px", res = 72)
           # Evaluate the expression to generate the plot
-          cat("[Executor] execute_render: Evaluating plot expression\n", file = stderr())
+          log_debug("[Executor] execute_render: Evaluating plot expression\n", file = stderr())
           eval(expr, envir = eval_env)
           dev.off()
-          cat("[Executor] execute_render: PNG device closed\n", file = stderr())
+          log_debug("[Executor] execute_render: PNG device closed\n", file = stderr())
           
           # Read the file and convert to base64
           if (file.exists(temp_file)) {
             file_size <- file.info(temp_file)$size
-            cat("[Executor] execute_render: Plot file exists, size:", file_size, "bytes\n", file = stderr())
+            log_debug("[Executor] execute_render: Plot file exists, size:", file_size, "bytes\n", file = stderr())
             if (file_size > 0) {
               plot_bytes <- readBin(temp_file, "raw", file_size)
               # Use base64enc if available
               if (requireNamespace("base64enc", quietly = TRUE)) {
                 base64_plot <- base64enc::base64encode(plot_bytes)
                 result_str <- paste0("data:image/png;base64,", base64_plot)
-                cat("[Executor] execute_render: Plot encoded, base64 length:", nchar(base64_plot), "\n", file = stderr())
+                log_debug("[Executor] execute_render: Plot encoded, base64 length:", nchar(base64_plot), "\n", file = stderr())
                 result_str
               } else {
                 error_msg <- "base64enc package not available, cannot encode plot. Install with: install.packages('base64enc')"
-                cat("[Executor] execute_render:", error_msg, "\n", file = stderr())
+                log_debug("[Executor] execute_render:", error_msg, "\n", file = stderr())
                 warning(error_msg)
                 # Return error message so client can see what's wrong
                 paste0("ERROR: ", error_msg)
               }
             } else {
               error_msg <- "plot file is empty"
-              cat("[Executor] execute_render:", error_msg, "\n", file = stderr())
+              log_debug("[Executor] execute_render:", error_msg, "\n", file = stderr())
               paste0("ERROR: ", error_msg)
             }
           } else {
             error_msg <- "plot file does not exist after dev.off()"
-            cat("[Executor] execute_render:", error_msg, "\n", file = stderr())
+            log_debug("[Executor] execute_render:", error_msg, "\n", file = stderr())
             paste0("ERROR: ", error_msg)
           }
         }, error = function(e) {
           error_msg <- conditionMessage(e)
-          cat("[Executor] execute_render: ERROR capturing plot:", error_msg, "\n", file = stderr())
-          cat("[Executor] execute_render: Error class:", class(e)[1], "\n", file = stderr())
+          log_debug("[Executor] execute_render: ERROR capturing plot:", error_msg, "\n", file = stderr())
+          log_debug("[Executor] execute_render: Error class:", class(e)[1], "\n", file = stderr())
           # Print traceback
           tryCatch({
             tb <- capture.output(traceback())
-            cat("[Executor] execute_render: Error traceback:\n", paste(tb, collapse = "\n"), "\n", file = stderr())
+            log_debug("[Executor] execute_render: Error traceback:\n", paste(tb, collapse = "\n"), "\n", file = stderr())
           }, error = function(e2) {
-            cat("[Executor] execute_render: Could not capture traceback\n", file = stderr())
+            log_debug("[Executor] execute_render: Could not capture traceback\n", file = stderr())
           })
           # Make sure device is closed even on error
           if (dev.cur() > 1) {
             tryCatch({
               dev.off()
-              cat("[Executor] execute_render: Closed graphics device after error\n", file = stderr())
+              log_debug("[Executor] execute_render: Closed graphics device after error\n", file = stderr())
             }, error = function(e2) {
-              cat("[Executor] execute_render: Error closing device:", conditionMessage(e2), "\n", file = stderr())
+              log_debug("[Executor] execute_render: Error closing device:", conditionMessage(e2), "\n", file = stderr())
             })
           }
           # Return error message as value so we can see what went wrong
@@ -795,10 +795,10 @@ ReactiveExecutor <- R6::R6Class("ReactiveExecutor",
           }
         })
         formatted <- result
-        cat("[Executor] execute_render: Plot result length:", if (is.character(formatted)) nchar(formatted) else "non-character", "\n", file = stderr())
-        cat("[Executor] execute_render: Plot result preview:", if (is.character(formatted) && nchar(formatted) > 0) substr(formatted, 1, 100) else "EMPTY", "\n", file = stderr())
+        log_debug("[Executor] execute_render: Plot result length:", if (is.character(formatted)) nchar(formatted) else "non-character", "\n", file = stderr())
+        log_debug("[Executor] execute_render: Plot result preview:", if (is.character(formatted) && nchar(formatted) > 0) substr(formatted, 1, 100) else "EMPTY", "\n", file = stderr())
       } else {
-        cat("[Executor] execute_render: Not a plot render (type='", render_type, "'), using normal evaluation path\n", file = stderr())
+        log_debug("[Executor] execute_render: Not a plot render (type='", render_type, "'), using normal evaluation path\n", file = stderr())
         # For non-plot types, evaluate normally
         result <- tryCatch(
           {
@@ -808,9 +808,9 @@ ReactiveExecutor <- R6::R6Class("ReactiveExecutor",
             if (is.null(eval_result)) {
               expr_str <- paste(deparse(expr), collapse = " ")
               if (grepl("\\bplot\\s*\\(", expr_str)) {
-                cat("[Executor] execute_render: WARNING - plot() expression returned NULL, but render_type is not 'plot'!\n", file = stderr())
-                cat("[Executor] execute_render: Expression:", expr_str, "\n", file = stderr())
-                cat("[Executor] execute_render: This suggests the node was not registered with render_type='plot'\n", file = stderr())
+                log_debug("[Executor] execute_render: WARNING - plot() expression returned NULL, but render_type is not 'plot'!\n", file = stderr())
+                log_debug("[Executor] execute_render: Expression:", expr_str, "\n", file = stderr())
+                log_debug("[Executor] execute_render: This suggests the node was not registered with render_type='plot'\n", file = stderr())
               }
             }
             eval_result
@@ -819,7 +819,7 @@ ReactiveExecutor <- R6::R6Class("ReactiveExecutor",
             # Catch all errors and return empty string
             # This prevents errors from propagating to the client
             error_msg <- conditionMessage(e)
-            cat("[Executor] execute_render: ERROR evaluating:", error_msg, "\n", file = stderr())
+            log_debug("[Executor] execute_render: ERROR evaluating:", error_msg, "\n", file = stderr())
 
             # Log warning for debugging, but don't send to client
             if (grepl("object.*input", error_msg, ignore.case = TRUE)) {
@@ -838,7 +838,7 @@ ReactiveExecutor <- R6::R6Class("ReactiveExecutor",
         if (is.null(result)) {
           expr_str <- paste(deparse(expr), collapse = " ")
           if (grepl("\\bplot\\s*\\(", expr_str)) {
-            cat("[Executor] execute_render: Detected plot() call returning NULL, treating as plot render\n", file = stderr())
+            log_debug("[Executor] execute_render: Detected plot() call returning NULL, treating as plot render\n", file = stderr())
             # Re-run as plot render
             temp_file <- tempfile(fileext = ".png")
             plot_result <- tryCatch({
@@ -879,7 +879,7 @@ ReactiveExecutor <- R6::R6Class("ReactiveExecutor",
           }
         }
 
-        cat("[Executor] execute_render: result='", if (is.character(result) && nchar(result) > 100) paste0(substr(result, 1, 100), "...") else result, "' (length:", if (is.character(result)) nchar(result) else length(result), ")\n", file = stderr())
+        log_debug("[Executor] execute_render: result='", if (is.character(result) && nchar(result) > 100) paste0(substr(result, 1, 100), "...") else result, "' (length:", if (is.character(result)) nchar(result) else length(result), ")\n", file = stderr())
 
         # Format based on render type (use render_type variable we got earlier)
         formatted <- switch(render_type,
@@ -964,7 +964,7 @@ ReactiveExecutor <- R6::R6Class("ReactiveExecutor",
     set_input = function(input_name, value) {
       tryCatch(
         {
-          cat("[Executor] set_input: input_name=", input_name, ", value='", value, "'\n", file = stderr())
+          log_debug("[Executor] set_input: input_name=", input_name, ", value='", value, "'\n", file = stderr())
           node_id <- paste0("input.", input_name)
 
           # CRITICAL: Ensure input node exists in graph before setting value
@@ -983,22 +983,22 @@ ReactiveExecutor <- R6::R6Class("ReactiveExecutor",
             graph_to_check <- self$builder$get_graph()
             existing_node <- graph_to_check$get_node(node_id)
             if (is.null(existing_node)) {
-              cat("[Executor] set_input: registering input node", node_id, "\n", file = stderr())
+              log_debug("[Executor] set_input: registering input node", node_id, "\n", file = stderr())
               input_node <- self$builder$register_input(input_name)
-              cat("[Executor] set_input: input node registered, id=", input_node$id, "\n", file = stderr())
+              log_debug("[Executor] set_input: input node registered, id=", input_node$id, "\n", file = stderr())
               # CRITICAL: Update executor's graph reference to include the new node
               # This ensures the graph has the input node when we do topological sort
               self$graph <- self$builder$get_graph()
-              cat("[Executor] set_input: updated executor graph reference, now has", length(self$graph$get_all_nodes()), "nodes\n", file = stderr())
+              log_debug("[Executor] set_input: updated executor graph reference, now has", length(self$graph$get_all_nodes()), "nodes\n", file = stderr())
               # Verify node is now in graph
               verify_node <- self$graph$get_node(node_id)
               if (!is.null(verify_node)) {
-                cat("[Executor] set_input: verified input node is in graph\n", file = stderr())
+                log_debug("[Executor] set_input: verified input node is in graph\n", file = stderr())
               } else {
-                cat("[Executor] set_input: WARNING - input node not found in graph after registration!\n", file = stderr())
+                log_debug("[Executor] set_input: WARNING - input node not found in graph after registration!\n", file = stderr())
               }
             } else {
-              cat("[Executor] set_input: input node", node_id, "already exists in graph\n", file = stderr())
+              log_debug("[Executor] set_input: input node", node_id, "already exists in graph\n", file = stderr())
               # Still update graph reference to ensure we have the latest
               self$graph <- self$builder$get_graph()
             }
@@ -1007,30 +1007,30 @@ ReactiveExecutor <- R6::R6Class("ReactiveExecutor",
           # Trim whitespace from input value before storing
           value_trimmed <- trimws(as.character(value))
           self$state_manager$set_value(node_id, value_trimmed)
-          cat("[Executor] set_input: stored value '", value_trimmed, "' for", node_id, "\n", file = stderr())
+          log_debug("[Executor] set_input: stored value '", value_trimmed, "' for", node_id, "\n", file = stderr())
           # Mark input node as dirty
           self$state_manager$mark_dirty(node_id)
-          cat("[Executor] set_input: marked", node_id, "as dirty\n", file = stderr())
+          log_debug("[Executor] set_input: marked", node_id, "as dirty\n", file = stderr())
 
           # CRITICAL: Ensure graph reference is up-to-date before execution
           # The input node was just registered, so get fresh graph from builder
           if (!is.null(self$builder)) {
             self$graph <- self$builder$get_graph()
-            cat("[Executor] set_input: refreshed graph reference before execute(), now has", length(self$graph$get_all_nodes()), "nodes\n", file = stderr())
+            log_debug("[Executor] set_input: refreshed graph reference before execute(), now has", length(self$graph$get_all_nodes()), "nodes\n", file = stderr())
           }
 
           # Trigger execution
           self$execute()
-          cat("[Executor] set_input: execute() completed\n", file = stderr())
+          log_debug("[Executor] set_input: execute() completed\n", file = stderr())
           # Send output updates via WebSocket if available
           self$send_output_updates()
-          cat("[Executor] set_input: send_output_updates() completed\n", file = stderr())
+          log_debug("[Executor] set_input: send_output_updates() completed\n", file = stderr())
         },
         error = function(e) {
           # Catch all errors during input processing
           # DO NOT send errors to client - they are internal errors
           error_msg <- conditionMessage(e)
-          cat("[Executor] ERROR in set_input:", error_msg, "\n", file = stderr())
+          log_debug("[Executor] ERROR in set_input:", error_msg, "\n", file = stderr())
 
           # Log warning for debugging, but don't send to client
           warning("[Executor] Error setting input '", input_name, "': ", error_msg)
@@ -1086,7 +1086,7 @@ ReactiveExecutor <- R6::R6Class("ReactiveExecutor",
         }
       }
       all_nodes <- graph$get_all_nodes()
-      cat("[Executor] send_output_updates: checking", length(all_nodes), "nodes\n", file = stderr())
+      log_debug("[Executor] send_output_updates: checking", length(all_nodes), "nodes\n", file = stderr())
 
       for (node in all_nodes) {
         # Check if it's a RenderNode - try multiple ways
@@ -1113,7 +1113,7 @@ ReactiveExecutor <- R6::R6Class("ReactiveExecutor",
 
         # Debug logging
         if (is_render) {
-          cat("[Executor] send_output_updates: Found render node", node$id, "with output_name=", if (is.null(output_name)) "NULL" else output_name, "\n", file = stderr())
+          log_debug("[Executor] send_output_updates: Found render node", node$id, "with output_name=", if (is.null(output_name)) "NULL" else output_name, "\n", file = stderr())
         }
 
         if (is_render) {
@@ -1137,7 +1137,7 @@ ReactiveExecutor <- R6::R6Class("ReactiveExecutor",
           } else {
             value
           }
-          cat("[Executor] send_output_updates: node", node_id, "value='", value_preview, "'\n", file = stderr())
+          log_debug("[Executor] send_output_updates: node", node_id, "value='", value_preview, "'\n", file = stderr())
 
           # Always send value updates, even if empty (so client can clear/update UI)
           # Convert NULL to empty string
@@ -1156,7 +1156,7 @@ ReactiveExecutor <- R6::R6Class("ReactiveExecutor",
           } else {
             value
           }
-          cat("[Executor] send_output_updates: sending update for", output_name, "with value='", value_preview2, "' to", length(ws_server$connections), "connections\n", file = stderr())
+          log_debug("[Executor] send_output_updates: sending update for", output_name, "with value='", value_preview2, "' to", length(ws_server$connections), "connections\n", file = stderr())
           # Send to all connections
           sent_count <- 0
           for (conn_id in names(ws_server$connections)) {
@@ -1166,15 +1166,15 @@ ReactiveExecutor <- R6::R6Class("ReactiveExecutor",
                 {
                   ws_server$send_message(conn, WS_MESSAGE_TYPES$VALUE_UPDATE, update_data)
                   sent_count <- sent_count + 1
-                  cat("[Executor] send_output_updates: sent message to connection", conn_id, "\n", file = stderr())
+                  log_debug("[Executor] send_output_updates: sent message to connection", conn_id, "\n", file = stderr())
                 },
                 error = function(e) {
-                  cat("[Executor] send_output_updates: ERROR sending to", conn_id, ":", conditionMessage(e), "\n", file = stderr())
+                  log_debug("[Executor] send_output_updates: ERROR sending to", conn_id, ":", conditionMessage(e), "\n", file = stderr())
                 }
               )
             }
           }
-          cat("[Executor] send_output_updates: sent", sent_count, "messages total\n", file = stderr())
+          log_debug("[Executor] send_output_updates: sent", sent_count, "messages total\n", file = stderr())
         }
       }
     },

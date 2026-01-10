@@ -60,9 +60,9 @@ WebSocketServer <- R6::R6Class("WebSocketServer",
       executor <- self$app$get_executor()
       if (!is.null(executor)) {
         # Execute all nodes to compute initial values
-        cat("[WebSocket] on_open: Executing all nodes for initial values\n", file = stderr())
+        log_debug("[WebSocket] on_open: Executing all nodes for initial values\n", file = stderr())
         executor$execute()
-        cat("[WebSocket] on_open: Execution complete, sending output updates\n", file = stderr())
+        log_debug("[WebSocket] on_open: Execution complete, sending output updates\n", file = stderr())
         # Use send_output_updates which properly finds all render nodes
         executor$send_output_updates()
       }
@@ -244,22 +244,22 @@ WebSocketServer <- R6::R6Class("WebSocketServer",
         return(invisible(NULL))
       }
       
-      cat("[WebSocket] Received user_input: ", data$input_name, " = ", data$value, "\n", file=stderr())
+      log_debug("[WebSocket] Received user_input: ", data$input_name, " = ", data$value, "\n", file=stderr())
       
       # Set input value in executor with error handling
       tryCatch({
         executor <- self$app$get_executor()
         if (is.null(executor)) {
-          cat("[WebSocket] ERROR: Executor is NULL! App:", if(is.null(self$app)) "NULL" else "exists", "\n", file=stderr())
+          log_debug("[WebSocket] ERROR: Executor is NULL! App:", if(is.null(self$app)) "NULL" else "exists", "\n", file=stderr())
           warning("[WebSocket] Executor is NULL!")
           return(invisible(NULL))
         }
-        cat("[WebSocket] Executor found, calling set_input for", data$input_name, "=", data$value, "\n", file=stderr())
+        log_debug("[WebSocket] Executor found, calling set_input for", data$input_name, "=", data$value, "\n", file=stderr())
         executor$set_input(data$input_name, data$value)
-        cat("[WebSocket] executor$set_input completed successfully\n", file=stderr())
+        log_debug("[WebSocket] executor$set_input completed successfully\n", file=stderr())
       }, error = function(e) {
-        cat("[WebSocket] ERROR in handle_user_input:", conditionMessage(e), "\n", file=stderr())
-        cat("[WebSocket] Error traceback:", paste(capture.output(traceback()), collapse="\n"), "\n", file=stderr())
+        log_debug("[WebSocket] ERROR in handle_user_input:", conditionMessage(e), "\n", file=stderr())
+        log_debug("[WebSocket] Error traceback:", paste(capture.output(traceback()), collapse="\n"), "\n", file=stderr())
         # Don't send errors to client - they are internal errors
         # The executor's set_input already handles errors internally
         error_msg <- conditionMessage(e)

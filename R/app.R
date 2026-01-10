@@ -183,7 +183,7 @@ app <- function(ui, server, ...) {
   # Store app reference in executor for WebSocket communication
   executor$app <- app_obj
 
-  app_obj
+  invisible(app_obj)
 }
 
 #' Run a hotShiny application from a file
@@ -502,18 +502,18 @@ HotShinyApp <- R6::R6Class("HotShinyApp",
           }
 
           # Scan all environments for ReactiveProxy objects
-          cat("[App] scanning", length(envs_to_scan), "environments\n", file = stderr())
+          log_debug("[App] scanning", length(envs_to_scan), "environments\n", file = stderr())
           for (scan_env in envs_to_scan) {
             tryCatch(
               {
                 env_vars <- ls(envir = scan_env, all.names = TRUE)
-                cat("[App] env has vars:", paste(env_vars, collapse = ", "), "\n", file = stderr())
+                log_debug("[App] env has vars:", paste(env_vars, collapse = ", "), "\n", file = stderr())
                 for (var_name in env_vars) {
                   tryCatch(
                     {
                       var_value <- get(var_name, envir = scan_env)
                       if (inherits(var_value, "ReactiveProxy")) {
-                        cat("[App] found ReactiveProxy:", var_name, "id=", var_value$node_id, "\n", file = stderr())
+                        log_debug("[App] found ReactiveProxy:", var_name, "id=", var_value$node_id, "\n", file = stderr())
                       }
                       if (inherits(var_value, "ReactiveProxy") && !is.null(var_value$node_id)) {
                         # Register this reactive by its variable name
@@ -525,7 +525,7 @@ HotShinyApp <- R6::R6Class("HotShinyApp",
                           # Only register if not already registered (avoid duplicates)
                           if (!exists(var_name, envir = reactive_sources, inherits = FALSE)) {
                             assign(var_name, var_value$node_id, envir = reactive_sources)
-                            cat("[App] Registered reactive source:", var_name, "->", var_value$node_id, "\n", file = stderr())
+                            log_debug("[App] Registered reactive source:", var_name, "->", var_value$node_id, "\n", file = stderr())
                           }
                         }
                       }
@@ -538,7 +538,7 @@ HotShinyApp <- R6::R6Class("HotShinyApp",
               },
               error = function(e) {
                 # Ignore errors when scanning environments
-                cat("[App] Error scanning env:", conditionMessage(e), "\n", file = stderr())
+                log_debug("[App] Error scanning env:", conditionMessage(e), "\n", file = stderr())
               }
             )
           }
@@ -592,9 +592,9 @@ HotShinyApp <- R6::R6Class("HotShinyApp",
             get("ast_to_expr", envir = ns)
           }
 
-          cat("[App] Re-extraction: Found", length(all_nodes), "nodes total\n", file = stderr())
+          log_debug("[App] Re-extraction: Found", length(all_nodes), "nodes total\n", file = stderr())
           reactive_count <- sum(sapply(all_nodes, function(n) inherits(n, "ReactiveExprNode")))
-          cat("[App] Re-extraction: Found", reactive_count, "reactive nodes\n", file = stderr())
+          log_debug("[App] Re-extraction: Found", reactive_count, "reactive nodes\n", file = stderr())
           
           # CRITICAL: Re-extract dependencies for BOTH ReactiveExprNodes AND RenderNodes
           # ReactiveExprNodes may depend on other reactive expressions (e.g., combined depends on sum_value)
@@ -602,11 +602,11 @@ HotShinyApp <- R6::R6Class("HotShinyApp",
           for (node in all_nodes) {
             # Handle ReactiveExprNode (reactive expressions that may depend on other reactives)
             if (inherits(node, "ReactiveExprNode") && !is.null(node$expr)) {
-              cat("[App] Re-extracting for ReactiveExprNode", node$id, ", current deps:", if (length(node$deps) == 0) "NONE" else paste(node$deps, collapse = ", "), "\n", file = stderr())
+              log_debug("[App] Re-extracting for ReactiveExprNode", node$id, ", current deps:", if (length(node$deps) == 0) "NONE" else paste(node$deps, collapse = ", "), "\n", file = stderr())
               expr <- ast_to_expr_fn(node$expr)
-              cat("[App] Reconstructed expr:", paste(deparse(expr), collapse = " "), "\n", file = stderr())
+              log_debug("[App] Reconstructed expr:", paste(deparse(expr), collapse = " "), "\n", file = stderr())
               new_deps <- extract_deps_fn(expr)
-              cat("[App] Extracted deps:", if (length(new_deps) == 0) "NONE" else paste(new_deps, collapse = ", "), "\n", file = stderr())
+              log_debug("[App] Extracted deps:", if (length(new_deps) == 0) "NONE" else paste(new_deps, collapse = ", "), "\n", file = stderr())
               # Update node dependencies
               node$deps <- new_deps
               # Rebuild edges for this node
@@ -614,18 +614,18 @@ HotShinyApp <- R6::R6Class("HotShinyApp",
               for (dep_id in new_deps) {
                 graph$edges <- c(graph$edges, list(list(from = dep_id, to = node$id)))
               }
-              cat("[App] Updated ReactiveExprNode", node$id, "deps to:", paste(node$deps, collapse = ", "), "\n", file = stderr())
+              log_debug("[App] Updated ReactiveExprNode", node$id, "deps to:", paste(node$deps, collapse = ", "), "\n", file = stderr())
             }
             # Handle RenderNode (render expressions)
             if (inherits(node, "RenderNode") && !is.null(node$expr)) {
-              cat("[App] Re-extracting for RenderNode", node$id, ", current deps:", if (length(node$deps) == 0) "NONE" else paste(node$deps, collapse = ", "), "\n", file = stderr())
-              cat("[App] AST structure:", str(node$expr), "\n", file = stderr())
+              log_debug("[App] Re-extracting for RenderNode", node$id, ", current deps:", if (length(node$deps) == 0) "NONE" else paste(node$deps, collapse = ", "), "\n", file = stderr())
+              log_debug("[App] AST structure:", str(node$expr), "\n", file = stderr())
               # Re-extract dependencies now that reactive sources are registered
               expr <- ast_to_expr_fn(node$expr)
-              cat("[App] Reconstructed expr:", paste(deparse(expr), collapse = " "), "\n", file = stderr())
-              cat("[App] Expr is call?", rlang::is_call(expr), ", call_name:", if (rlang::is_call(expr)) rlang::call_name(expr) else "N/A", "\n", file = stderr())
+              log_debug("[App] Reconstructed expr:", paste(deparse(expr), collapse = " "), "\n", file = stderr())
+              log_debug("[App] Expr is call?", rlang::is_call(expr), ", call_name:", if (rlang::is_call(expr)) rlang::call_name(expr) else "N/A", "\n", file = stderr())
               new_deps <- extract_deps_fn(expr)
-              cat("[App] Extracted deps:", if (length(new_deps) == 0) "NONE" else paste(new_deps, collapse = ", "), "\n", file = stderr())
+              log_debug("[App] Extracted deps:", if (length(new_deps) == 0) "NONE" else paste(new_deps, collapse = ", "), "\n", file = stderr())
               # Update node dependencies
               node$deps <- new_deps
               # Rebuild edges for this node
@@ -635,31 +635,31 @@ HotShinyApp <- R6::R6Class("HotShinyApp",
               for (dep_id in new_deps) {
                 graph$edges <- c(graph$edges, list(list(from = dep_id, to = node$id)))
               }
-              cat("[App] Updated RenderNode", node$id, "deps to:", paste(node$deps, collapse = ", "), "\n", file = stderr())
+              log_debug("[App] Updated RenderNode", node$id, "deps to:", paste(node$deps, collapse = ", "), "\n", file = stderr())
             }
           }
 
           # Check graph after server execution
           graph_after <- self$builder$get_graph()
           nodes_after <- graph_after$get_all_nodes()
-          cat("[App] Graph after server execution:", length(nodes_after), "nodes\n", file = stderr())
+          log_debug("[App] Graph after server execution:", length(nodes_after), "nodes\n", file = stderr())
 
           # CRITICAL: Update executor's graph reference to the latest graph
           # The graph was updated when nodes were added during server execution
           if (!is.null(self$executor)) {
             self$executor$graph <- graph_after
-            cat("[App] Updated executor's graph reference\n", file = stderr())
+            log_debug("[App] Updated executor's graph reference\n", file = stderr())
           }
           if (length(nodes_after) > 0) {
-            cat("[App] Node IDs:", paste(sapply(nodes_after, function(n) n$id), collapse = ", "), "\n", file = stderr())
+            log_debug("[App] Node IDs:", paste(sapply(nodes_after, function(n) n$id), collapse = ", "), "\n", file = stderr())
             for (i in seq_along(nodes_after)) {
               n <- nodes_after[[i]]
-              cat("[App] Node", i, ":", n$id, "- Class:", paste(class(n), collapse = ", "), "\n", file = stderr())
+              log_debug("[App] Node", i, ":", n$id, "- Class:", paste(class(n), collapse = ", "), "\n", file = stderr())
               if (inherits(n, "RenderNode")) {
-                cat("[App]   Output name:", if (is.null(n$output_name)) "NULL" else n$output_name, "\n", file = stderr())
+                log_debug("[App]   Output name:", if (is.null(n$output_name)) "NULL" else n$output_name, "\n", file = stderr())
               }
               if (!is.null(n$deps) && length(n$deps) > 0) {
-                cat("[App]   Dependencies:", paste(n$deps, collapse = ", "), "\n", file = stderr())
+                log_debug("[App]   Dependencies:", paste(n$deps, collapse = ", "), "\n", file = stderr())
               }
             }
           }
@@ -840,7 +840,7 @@ HotShinyApp <- R6::R6Class("HotShinyApp",
         later::run_now()
         iter_count <- iter_count + 1
         if (iter_count %% 100 == 0) {
-          cat("[EventLoop] Iteration", iter_count, "\n", file = stderr())
+          log_debug("[EventLoop] Iteration", iter_count, "\n", file = stderr())
         }
         Sys.sleep(0.01)
       }

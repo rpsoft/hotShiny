@@ -31,7 +31,7 @@ ui <- function() {
 server <- function(input, output, session) {
   # Multiple reactive expressions
   sum_value <- reactive({
-    input$a + input$b + 30
+    input$a + input$b
   })
   
   product_value <- reactive({
@@ -94,8 +94,6 @@ app_file <- tryCatch({
 })
 
 app_dir <- dirname(app_file)
-cat("[App] Watching file:", app_file, "\n", file = stderr())
-cat("[App] Watching directory:", app_dir, "\n", file = stderr())
 enable_hot_reload(app_obj, watch_paths = c(app_file, app_dir))
 
 # Run app

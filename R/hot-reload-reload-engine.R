@@ -95,27 +95,27 @@ HotReloadEngine <- R6::R6Class("HotReloadEngine",
       # Watch files
       for (path in watch_paths) {
         if (dir.exists(path)) {
-          cat("[HotReload] Watching directory:", path, "\n", file = stderr())
+          log_debug("[HotReload] Watching directory:", path, "\n", file = stderr())
           self$file_watcher$watch_directory(path, callback = function(file) {
-            cat("[HotReload] Directory watch callback triggered for:", file, "\n", file = stderr())
+            log_debug("[HotReload] Directory watch callback triggered for:", file, "\n", file = stderr())
             self$handle_file_change(file)
           })
         } else if (file.exists(path)) {
-          cat("[HotReload] Watching file:", path, "\n", file = stderr())
+          log_debug("[HotReload] Watching file:", path, "\n", file = stderr())
           self$file_watcher$watch(path, callback = function(file) {
-            cat("[HotReload] File watch callback triggered for:", file, "\n", file = stderr())
+            log_debug("[HotReload] File watch callback triggered for:", file, "\n", file = stderr())
             self$handle_file_change(file)
           })
         } else {
-          cat("[HotReload] WARNING: Path does not exist:", path, "\n", file = stderr())
+          log_debug("[HotReload] WARNING: Path does not exist:", path, "\n", file = stderr())
         }
       }
       
       # Log watched files
       watched <- self$file_watcher$get_watched_files()
-      cat("[HotReload] Total watched files:", length(watched), "\n", file = stderr())
+      log_debug("[HotReload] Total watched files:", length(watched), "\n", file = stderr())
       if (length(watched) > 0) {
-        cat("[HotReload] Watched files:", paste(watched, collapse = ", "), "\n", file = stderr())
+        log_debug("[HotReload] Watched files:", paste(watched, collapse = ", "), "\n", file = stderr())
       }
 
       # Start file watcher
@@ -139,12 +139,12 @@ HotReloadEngine <- R6::R6Class("HotReloadEngine",
     # Handle file change
     handle_file_change = function(file_path) {
       if (!self$enabled) {
-        cat("[HotReload] handle_file_change: Hot reload is disabled, ignoring\n", file = stderr())
+        log_debug("[HotReload] handle_file_change: Hot reload is disabled, ignoring\n", file = stderr())
         return(invisible(NULL))
       }
 
-      message("[HotReload] File changed: ", file_path)
-      cat("[HotReload] handle_file_change: Processing file change for:", file_path, "\n", file = stderr())
+      log_debug("[HotReload] File changed: ", file_path)
+      log_debug("[HotReload] handle_file_change: Processing file change for:", file_path, "\n", file = stderr())
 
       # Attempt to extract updated app components from the file
       tryCatch(
@@ -174,68 +174,68 @@ HotReloadEngine <- R6::R6Class("HotReloadEngine",
           temp_env$enable_hot_reload <- function(...) {}
 
           # Source the file to execute definitions
-          cat("[HotReload] Sourcing file:", file_path, "\n", file = stderr())
+          log_debug("[HotReload] Sourcing file:", file_path, "\n", file = stderr())
           sys.source(file_path, envir = temp_env)
-          cat("[HotReload] File sourced successfully\n", file = stderr())
+          log_debug("[HotReload] File sourced successfully\n", file = stderr())
           
           # List all variables in temp_env for debugging
           temp_vars <- ls(envir = temp_env, all.names = TRUE)
-          cat("[HotReload] Variables in temp_env after sourcing:", paste(temp_vars, collapse = ", "), "\n", file = stderr())
+          log_debug("[HotReload] Variables in temp_env after sourcing:", paste(temp_vars, collapse = ", "), "\n", file = stderr())
 
           # Check if we captured ui/server via app() spy
           if (exists("captured_ui", envir = temp_env) && exists("captured_server", envir = temp_env)) {
-            message("[HotReload] Confirming hot reload: found updated app() definition")
-            cat("[HotReload] Found captured_ui and captured_server\n", file = stderr())
+            log_debug("[HotReload] Confirming hot reload: found updated app() definition")
+            log_debug("[HotReload] Found captured_ui and captured_server\n", file = stderr())
             updated_ui <- get("captured_ui", envir = temp_env)
             updated_server <- get("captured_server", envir = temp_env)
             
-            cat("[HotReload] updated_server is function:", is.function(updated_server), "\n", file = stderr())
-            cat("[HotReload] updated_ui type:", class(updated_ui), "\n", file = stderr())
+            log_debug("[HotReload] updated_server is function:", is.function(updated_server), "\n", file = stderr())
+            log_debug("[HotReload] updated_ui type:", class(updated_ui), "\n", file = stderr())
 
             # Update current app components
             self$app$ui <- updated_ui
             self$app$server_func <- updated_server
-            cat("[HotReload] Updated app$ui and app$server_func\n", file = stderr())
-            cat("[HotReload] app$server_func is now function:", is.function(self$app$server_func), "\n", file = stderr())
+            log_debug("[HotReload] Updated app$ui and app$server_func\n", file = stderr())
+            log_debug("[HotReload] app$server_func is now function:", is.function(self$app$server_func), "\n", file = stderr())
           } else {
             # Fallback: check if 'ui' and 'server' are defined as variables
             # This handles cases where app() isn't called or names are standard
-            cat("[HotReload] Checking for ui and server variables in temp_env\n", file = stderr())
-            cat("[HotReload] Variables in temp_env:", paste(ls(envir = temp_env), collapse = ", "), "\n", file = stderr())
+            log_debug("[HotReload] Checking for ui and server variables in temp_env\n", file = stderr())
+            log_debug("[HotReload] Variables in temp_env:", paste(ls(envir = temp_env), collapse = ", "), "\n", file = stderr())
             if (exists("server", envir = temp_env) && is.function(temp_env$server)) {
               self$app$server_func <- temp_env$server
-              message("[HotReload] Updated server function from variable")
-              cat("[HotReload] Updated server function from variable\n", file = stderr())
-              cat("[HotReload] app$server_func is now function:", is.function(self$app$server_func), "\n", file = stderr())
+              log_debug("[HotReload] Updated server function from variable")
+              log_debug("[HotReload] Updated server function from variable\n", file = stderr())
+              log_debug("[HotReload] app$server_func is now function:", is.function(self$app$server_func), "\n", file = stderr())
             } else {
-              cat("[HotReload] Server variable not found or not a function\n", file = stderr())
+              log_debug("[HotReload] Server variable not found or not a function\n", file = stderr())
               if (exists("server", envir = temp_env)) {
-                cat("[HotReload] Server exists but is not a function, type:", class(temp_env$server), "\n", file = stderr())
+                log_debug("[HotReload] Server exists but is not a function, type:", class(temp_env$server), "\n", file = stderr())
               }
             }
             if (exists("ui", envir = temp_env)) { # ui can be function or tag
               self$app$ui <- temp_env$ui
-              message("[HotReload] Updated ui from variable")
-              cat("[HotReload] Updated ui from variable\n", file = stderr())
+              log_debug("[HotReload] Updated ui from variable")
+              log_debug("[HotReload] Updated ui from variable\n", file = stderr())
             } else {
-              cat("[HotReload] UI variable not found\n", file = stderr())
+              log_debug("[HotReload] UI variable not found\n", file = stderr())
             }
           }
         },
         error = function(e) {
           warning("[HotReload] Hot update extraction failed for ", file_path, ": ", conditionMessage(e))
-          cat("[HotReload] ERROR in handle_file_change:", conditionMessage(e), "\n", file = stderr())
-          cat("[HotReload] Error traceback:\n", file = stderr())
+          log_debug("[HotReload] ERROR in handle_file_change:", conditionMessage(e), "\n", file = stderr())
+          log_debug("[HotReload] Error traceback:\n", file = stderr())
           print(traceback())
           # Continue anyway, maybe it was just a helper file change
         }
       )
 
-      message("[HotReload] Reloading...")
-      cat("[HotReload] Starting reload process\n", file = stderr())
-      cat("[HotReload] app$server_func is function:", is.function(self$app$server_func), "\n", file = stderr())
+      log_debug("[HotReload] Reloading...")
+      log_debug("[HotReload] Starting reload process\n", file = stderr())
+      log_debug("[HotReload] app$server_func is function:", is.function(self$app$server_func), "\n", file = stderr())
       if (!is.function(self$app$server_func)) {
-        cat("[HotReload] ERROR: app$server_func is not a function! Cannot reload.\n", file = stderr())
+        log_debug("[HotReload] ERROR: app$server_func is not a function! Cannot reload.\n", file = stderr())
         return(invisible(NULL))
       }
 
@@ -247,17 +247,17 @@ HotReloadEngine <- R6::R6Class("HotReloadEngine",
           # Notify clients
           if (!is.null(self$app$ws_server)) {
             self$app$ws_server$send_hot_reload(diff_summary)
-            cat("[HotReload] Sent hot reload notification to clients\n", file = stderr())
+            log_debug("[HotReload] Sent hot reload notification to clients\n", file = stderr())
           } else {
-            cat("[HotReload] WARNING: ws_server is NULL, cannot notify clients\n", file = stderr())
+            log_debug("[HotReload] WARNING: ws_server is NULL, cannot notify clients\n", file = stderr())
           }
 
-          message("[HotReload] Reload complete")
-          cat("[HotReload] Reload complete\n", file = stderr())
+          log_debug("[HotReload] Reload complete")
+          log_debug("[HotReload] Reload complete\n", file = stderr())
         },
         error = function(e) {
           warning("[HotReload] Hot reload failed: ", conditionMessage(e))
-          cat("[HotReload] ERROR: Hot reload failed: ", conditionMessage(e), "\n", file = stderr())
+          log_debug("[HotReload] ERROR: Hot reload failed: ", conditionMessage(e), "\n", file = stderr())
         }
       )
     },
@@ -265,8 +265,8 @@ HotReloadEngine <- R6::R6Class("HotReloadEngine",
     # Perform hot reload
     reload = function() {
       tryCatch({
-        message("[HotReload] Starting reload...")
-        cat("[HotReload] reload() function called\n", file = stderr())
+        log_debug("[HotReload] Starting reload...")
+        log_debug("[HotReload] reload() function called\n", file = stderr())
         
         # First, set up base_path and load_env
         ns <- asNamespace("hotShiny")
@@ -274,7 +274,7 @@ HotReloadEngine <- R6::R6Class("HotReloadEngine",
         if (!file.exists(file.path(base_path, "R"))) {
           base_path <- system.file(package = "hotShiny")
         }
-        cat("[HotReload] base_path:", base_path, "\n", file = stderr())
+        log_debug("[HotReload] base_path:", base_path, "\n", file = stderr())
         
         load_env <- new.env(parent = ns)
         
@@ -292,7 +292,7 @@ HotReloadEngine <- R6::R6Class("HotReloadEngine",
         for (file_rel in files_to_load) {
           file_path <- file.path(base_path, file_rel)
           if (file.exists(file_path)) {
-            cat("[HotReload] Loading:", file_rel, "\n", file = stderr())
+            log_debug("[HotReload] Loading:", file_rel, "\n", file = stderr())
             sys.source(file_path, envir = load_env)
           }
         }
@@ -303,37 +303,37 @@ HotReloadEngine <- R6::R6Class("HotReloadEngine",
         } else {
           stop("GraphBuilder not found after loading files")
         }
-        cat("[HotReload] Got GraphBuilder class\n", file = stderr())
+        log_debug("[HotReload] Got GraphBuilder class\n", file = stderr())
         
         InputProxyClass <- if (exists("InputProxy", envir = load_env)) {
           get("InputProxy", envir = load_env)
         } else {
           stop("InputProxy not found after loading files")
         }
-        cat("[HotReload] Got InputProxy class\n", file = stderr())
+        log_debug("[HotReload] Got InputProxy class\n", file = stderr())
         
         OutputProxyFn <- if (exists("OutputProxy", envir = load_env)) {
           get("OutputProxy", envir = load_env)
         } else {
           stop("OutputProxy not found after loading files")
         }
-        cat("[HotReload] Got OutputProxy function\n", file = stderr())
+        log_debug("[HotReload] Got OutputProxy function\n", file = stderr())
         
         set_graph_builder_fn <- if (exists("set_graph_builder", envir = load_env)) {
           get("set_graph_builder", envir = load_env)
         } else {
           stop("set_graph_builder not found after loading files")
         }
-        cat("[HotReload] Got set_graph_builder function\n", file = stderr())
+        log_debug("[HotReload] Got set_graph_builder function\n", file = stderr())
         
         # Create new builder
-        message("[HotReload] Creating new builder...")
-        cat("[HotReload] Creating new builder...\n", file = stderr())
+        log_debug("[HotReload] Creating new builder...")
+        log_debug("[HotReload] Creating new builder...\n", file = stderr())
         new_builder <- GraphBuilderClass$new()
         set_graph_builder_fn(new_builder)
         
         # CRITICAL: Set up execution environment with helper functions (same as in runApp)
-        message("[HotReload] Setting up execution environment...")
+        log_debug("[HotReload] Setting up execution environment...")
         exec_env <- new.env(parent = parent.frame())
         
         # List of functions to make available
@@ -407,7 +407,7 @@ HotReloadEngine <- R6::R6Class("HotReloadEngine",
         # ALWAYS set in namespace to ensure extract_dependencies finds the correct builder
         if (exists("set_graph_builder", envir = ns)) {
           get("set_graph_builder", envir = ns)(new_builder)
-          cat("[HotReload] Set graph builder in namespace context\n", file = stderr())
+          log_debug("[HotReload] Set graph builder in namespace context\n", file = stderr())
         }
         
         # Set executor in BOTH execution environment AND namespace
@@ -418,7 +418,7 @@ HotReloadEngine <- R6::R6Class("HotReloadEngine",
         # ALWAYS set in namespace as well
         if (exists("set_executor", envir = ns)) {
           get("set_executor", envir = ns)(self$app$executor)
-          cat("[HotReload] Set executor in namespace context\n", file = stderr())
+          log_debug("[HotReload] Set executor in namespace context\n", file = stderr())
         }
         
         # Get InputProxy and OutputProxy classes
@@ -451,17 +451,17 @@ HotReloadEngine <- R6::R6Class("HotReloadEngine",
         
         # CRITICAL: Pre-register input nodes from old state BEFORE executing server
         # This ensures input nodes exist when reactive expressions are created
-        message("[HotReload] Pre-registering input nodes from old state...")
-        cat("[HotReload] Pre-registering input nodes from old state\n", file = stderr())
+        log_debug("[HotReload] Pre-registering input nodes from old state...")
+        log_debug("[HotReload] Pre-registering input nodes from old state\n", file = stderr())
         state_manager <- self$app$state_manager
         if (!is.null(state_manager)) {
           old_values <- state_manager$serialize_state()
-          cat("[HotReload] Found", length(old_values), "values in old state_manager\n", file = stderr())
+          log_debug("[HotReload] Found", length(old_values), "values in old state_manager\n", file = stderr())
           for (node_id in names(old_values)) {
             if (grepl("^input\\.", node_id)) {
               input_name <- sub("^input\\.", "", node_id)
               value <- old_values[[node_id]]
-              cat("[HotReload] Pre-registering input:", input_name, "=", value, "\n", file = stderr())
+              log_debug("[HotReload] Pre-registering input:", input_name, "=", value, "\n", file = stderr())
               # Register the input node in new builder
               new_builder$register_input(input_name)
               # Also set the value in state_manager so it's available during execution
@@ -480,10 +480,10 @@ HotReloadEngine <- R6::R6Class("HotReloadEngine",
         session <- NULL
         
         # Re-execute server with proper environment setup
-        message("[HotReload] Re-executing server function...")
-        cat("[HotReload] About to execute server_func, is function:", is.function(self$app$server_func), "\n", file = stderr())
+        log_debug("[HotReload] Re-executing server function...")
+        log_debug("[HotReload] About to execute server_func, is function:", is.function(self$app$server_func), "\n", file = stderr())
         if (is.function(self$app$server_func)) {
-          cat("[HotReload] Executing server_func now...\n", file = stderr())
+          log_debug("[HotReload] Executing server_func now...\n", file = stderr())
           # Attach functions to server function's environment
           server_env <- environment(self$app$server_func)
           if (is.null(server_env)) {
@@ -518,22 +518,22 @@ HotReloadEngine <- R6::R6Class("HotReloadEngine",
         
         # CRITICAL: Register reactive expressions by variable name (same as in runApp)
         # Scan environments for ReactiveProxy objects
-        message("[HotReload] Scanning environments for reactive sources...")
+        log_debug("[HotReload] Scanning environments for reactive sources...")
         envs_to_scan <- list()
         
         # Scan environments captured in graph nodes
         graph_nodes <- new_builder$get_graph()$get_all_nodes()
-        cat("[HotReload] Found", length(graph_nodes), "graph nodes to scan for environments\n", file = stderr())
+        log_debug("[HotReload] Found", length(graph_nodes), "graph nodes to scan for environments\n", file = stderr())
         for (node in graph_nodes) {
           if (!is.null(node$env) && is.environment(node$env)) {
             envs_to_scan <- c(envs_to_scan, list(node$env))
-            cat("[HotReload]   Node", node$id, "has environment\n", file = stderr())
+            log_debug("[HotReload]   Node", node$id, "has environment\n", file = stderr())
           } else {
-            cat("[HotReload]   Node", node$id, "has NO environment (env is NULL)\n", file = stderr())
+            log_debug("[HotReload]   Node", node$id, "has NO environment (env is NULL)\n", file = stderr())
           }
         }
         
-        cat("[HotReload] Scanning", length(envs_to_scan), "environments for ReactiveProxy objects\n", file = stderr())
+        log_debug("[HotReload] Scanning", length(envs_to_scan), "environments for ReactiveProxy objects\n", file = stderr())
         
         # Scan all environments for ReactiveProxy objects
         env_idx <- 0
@@ -542,13 +542,13 @@ HotReloadEngine <- R6::R6Class("HotReloadEngine",
           tryCatch(
             {
               env_vars <- ls(envir = scan_env, all.names = TRUE)
-              cat("[HotReload]   Env", env_idx, "has vars:", paste(env_vars, collapse = ", "), "\n", file = stderr())
+              log_debug("[HotReload]   Env", env_idx, "has vars:", paste(env_vars, collapse = ", "), "\n", file = stderr())
               for (var_name in env_vars) {
                 tryCatch(
                   {
                     var_value <- get(var_name, envir = scan_env)
                     if (inherits(var_value, "ReactiveProxy")) {
-                      cat("[HotReload]     Found ReactiveProxy:", var_name, 
+                      log_debug("[HotReload]     Found ReactiveProxy:", var_name, 
                           "node_id=", if (is.null(var_value$node_id)) "NULL" else var_value$node_id, "\n", file = stderr())
                       if (!is.null(var_value$node_id)) {
                         # Register this reactive by its variable name
@@ -560,7 +560,7 @@ HotReloadEngine <- R6::R6Class("HotReloadEngine",
                           # Only register if not already registered (avoid duplicates)
                           if (!exists(var_name, envir = reactive_sources, inherits = FALSE)) {
                             assign(var_name, var_value$node_id, envir = reactive_sources)
-                            message("[HotReload] Registered reactive source: ", var_name, " -> ", var_value$node_id)
+                            log_debug("[HotReload] Registered reactive source: ", var_name, " -> ", var_value$node_id)
                           }
                         }
                       }
@@ -568,20 +568,20 @@ HotReloadEngine <- R6::R6Class("HotReloadEngine",
                   },
                   error = function(e) {
                     # Ignore errors when accessing variables
-                    cat("[HotReload]     Error accessing var", var_name, ":", conditionMessage(e), "\n", file = stderr())
+                    log_debug("[HotReload]     Error accessing var", var_name, ":", conditionMessage(e), "\n", file = stderr())
                   }
                 )
               }
             },
             error = function(e) {
               # Ignore errors when scanning environments
-              cat("[HotReload]   Error scanning env", env_idx, ":", conditionMessage(e), "\n", file = stderr())
+              log_debug("[HotReload]   Error scanning env", env_idx, ":", conditionMessage(e), "\n", file = stderr())
             }
           )
         }
         
         # CRITICAL: Manually trigger set_output_name for any pending RenderProxies (same as in runApp)
-        message("[HotReload] Triggering set_output_name for pending RenderProxies...")
+        log_debug("[HotReload] Triggering set_output_name for pending RenderProxies...")
         if (is.environment(output)) {
           output_names <- ls(envir = output, all.names = TRUE)
           for (name in output_names) {
@@ -601,7 +601,7 @@ HotReloadEngine <- R6::R6Class("HotReloadEngine",
         
         # CRITICAL: Re-extract dependencies after server execution (same as in runApp)
         # This ensures reactive sources are registered before dependency extraction
-        message("[HotReload] Re-extracting dependencies...")
+        log_debug("[HotReload] Re-extracting dependencies...")
         graph <- new_builder$get_graph()
         all_nodes <- graph$get_all_nodes()
         
@@ -610,13 +610,13 @@ HotReloadEngine <- R6::R6Class("HotReloadEngine",
             exists("reactive_sources", envir = new_builder$reactive_context)) {
           rs <- get("reactive_sources", envir = new_builder$reactive_context)
           rs_names <- ls(envir = rs, all.names = TRUE)
-          cat("[HotReload] Re-extraction: reactive_sources contains:", 
+          log_debug("[HotReload] Re-extraction: reactive_sources contains:", 
               if (length(rs_names) == 0) "NONE" else paste(rs_names, collapse = ", "), "\n", file = stderr())
           for (n in rs_names) {
-            cat("[HotReload]   ", n, "->", get(n, envir = rs), "\n", file = stderr())
+            log_debug("[HotReload]   ", n, "->", get(n, envir = rs), "\n", file = stderr())
           }
         } else {
-          cat("[HotReload] Re-extraction: WARNING - reactive_sources not found!\n", file = stderr())
+          log_debug("[HotReload] Re-extraction: WARNING - reactive_sources not found!\n", file = stderr())
         }
         
         # Load helper functions
@@ -635,9 +635,9 @@ HotReloadEngine <- R6::R6Class("HotReloadEngine",
           }
         }, error = function(e) NULL)
         if (identical(ns_builder, new_builder)) {
-          cat("[HotReload] Re-extraction: namespace builder is correctly set to new_builder\n", file = stderr())
+          log_debug("[HotReload] Re-extraction: namespace builder is correctly set to new_builder\n", file = stderr())
         } else {
-          cat("[HotReload] Re-extraction: WARNING - namespace builder mismatch! Setting it now.\n", file = stderr())
+          log_debug("[HotReload] Re-extraction: WARNING - namespace builder mismatch! Setting it now.\n", file = stderr())
           if (exists("set_graph_builder", envir = ns)) {
             get("set_graph_builder", envir = ns)(new_builder)
           }
@@ -674,11 +674,11 @@ HotReloadEngine <- R6::R6Class("HotReloadEngine",
           # Handle ReactiveExprNode (reactive expressions that may depend on other reactives)
           if (inherits(node, "ReactiveExprNode") && !is.null(node$expr)) {
             expr <- ast_to_expr_fn(node$expr)
-            cat("[HotReload] Re-extracting deps for ReactiveExprNode", node$id, "\n", file = stderr())
-            cat("[HotReload]   expr:", paste(deparse(expr), collapse = " "), "\n", file = stderr())
+            log_debug("[HotReload] Re-extracting deps for ReactiveExprNode", node$id, "\n", file = stderr())
+            log_debug("[HotReload]   expr:", paste(deparse(expr), collapse = " "), "\n", file = stderr())
             new_deps <- extract_deps_fn(expr)
-            cat("[HotReload]   old deps:", if (length(node$deps) == 0) "NONE" else paste(node$deps, collapse = ", "), "\n", file = stderr())
-            cat("[HotReload]   new deps:", if (length(new_deps) == 0) "NONE" else paste(new_deps, collapse = ", "), "\n", file = stderr())
+            log_debug("[HotReload]   old deps:", if (length(node$deps) == 0) "NONE" else paste(node$deps, collapse = ", "), "\n", file = stderr())
+            log_debug("[HotReload]   new deps:", if (length(new_deps) == 0) "NONE" else paste(new_deps, collapse = ", "), "\n", file = stderr())
             node$deps <- new_deps
             # Rebuild edges
             graph$edges <- Filter(function(e) e$to != node$id, graph$edges)
@@ -689,11 +689,11 @@ HotReloadEngine <- R6::R6Class("HotReloadEngine",
           # Handle RenderNode (render expressions)
           if (inherits(node, "RenderNode") && !is.null(node$expr)) {
             expr <- ast_to_expr_fn(node$expr)
-            cat("[HotReload] Re-extracting deps for RenderNode", node$id, "output_name=", node$output_name, "\n", file = stderr())
-            cat("[HotReload]   expr:", paste(deparse(expr), collapse = " "), "\n", file = stderr())
+            log_debug("[HotReload] Re-extracting deps for RenderNode", node$id, "output_name=", node$output_name, "\n", file = stderr())
+            log_debug("[HotReload]   expr:", paste(deparse(expr), collapse = " "), "\n", file = stderr())
             new_deps <- extract_deps_fn(expr)
-            cat("[HotReload]   old deps:", if (length(node$deps) == 0) "NONE" else paste(node$deps, collapse = ", "), "\n", file = stderr())
-            cat("[HotReload]   new deps:", if (length(new_deps) == 0) "NONE" else paste(new_deps, collapse = ", "), "\n", file = stderr())
+            log_debug("[HotReload]   old deps:", if (length(node$deps) == 0) "NONE" else paste(node$deps, collapse = ", "), "\n", file = stderr())
+            log_debug("[HotReload]   new deps:", if (length(new_deps) == 0) "NONE" else paste(new_deps, collapse = ", "), "\n", file = stderr())
             node$deps <- new_deps
             # Rebuild edges
             graph$edges <- Filter(function(e) e$to != node$id, graph$edges)
@@ -711,7 +711,7 @@ HotReloadEngine <- R6::R6Class("HotReloadEngine",
         
         # Input values were already preserved and registered at the start of reload()
         # Now we just need to mark all nodes as dirty so they re-execute with the new logic
-        cat("[HotReload] Marking all nodes as dirty\n", file = stderr())
+        log_debug("[HotReload] Marking all nodes as dirty\n", file = stderr())
         all_new_nodes <- new_graph$get_all_nodes()
         for (node in all_new_nodes) {
           if (!is.null(node$id)) {
@@ -720,20 +720,20 @@ HotReloadEngine <- R6::R6Class("HotReloadEngine",
         }
         
         # CRITICAL: Execute all nodes to compute new values after reload
-        message("[HotReload] Executing nodes to compute new values...")
-        cat("[HotReload] Calling executor$execute()\n", file = stderr())
+        log_debug("[HotReload] Executing nodes to compute new values...")
+        log_debug("[HotReload] Calling executor$execute()\n", file = stderr())
         self$app$executor$execute()
         
         # CRITICAL: Send updated output values to clients
-        message("[HotReload] Sending output updates to clients...")
+        log_debug("[HotReload] Sending output updates to clients...")
         self$app$executor$send_output_updates()
         
-        message("[HotReload] Complete! Nodes: ", length(new_graph$get_all_nodes()))
+        log_debug("[HotReload] Complete! Nodes: ", length(new_graph$get_all_nodes()))
         list(status = "success", nodes = length(new_graph$get_all_nodes()))
       }, error = function(e) {
         warning("[HotReload] Error in reload(): ", conditionMessage(e))
-        cat("[HotReload] ERROR in reload():", conditionMessage(e), "\n", file = stderr())
-        cat("[HotReload] Error call:", paste(deparse(e$call), collapse = " "), "\n", file = stderr())
+        log_debug("[HotReload] ERROR in reload():", conditionMessage(e), "\n", file = stderr())
+        log_debug("[HotReload] Error call:", paste(deparse(e$call), collapse = " "), "\n", file = stderr())
         traceback()
         list(status = "error", message = conditionMessage(e))
       })
@@ -803,5 +803,5 @@ enable_hot_reload <- function(app, watch_paths = NULL) {
 
   reload_engine <- attr(app, "reload_engine")
   reload_engine$enable(watch_paths = watch_paths)
-  app
+  invisible(app)
 }

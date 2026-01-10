@@ -161,6 +161,37 @@ enable_time_travel(app_obj)
 # Record and replay reactivity
 ```
 
+### Debug Logging
+
+By default, hotShiny produces minimal console output. To enable verbose debug logging:
+
+**Server-side (R):**
+
+```r
+# Enable verbose logging before running app
+options(hotshiny.verbose = TRUE)
+app_obj$runApp()
+```
+
+This will show detailed logs for:
+- Graph building and dependency extraction
+- Hot reload operations
+- Reactive execution
+- WebSocket communication
+
+**Client-side (Browser):**
+
+```javascript
+// In browser console
+window.HOTSHINY_DEBUG = true;
+```
+
+This enables detailed client-side logging for:
+- WebSocket messages
+- DOM updates
+- Input/output handling
+- Hot reload events
+
 ## Documentation
 
 See the [plan file](plan) for detailed architecture and implementation notes.

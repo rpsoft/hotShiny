@@ -127,7 +127,7 @@ InputProxy <- R6::R6Class("InputProxy",
           if (!is.null(self$builder)) {
             node <- self$builder$register_input(name)
             node_id <- node$id
-            cat("[InputProxy] get: name=", name, ", node_id=", node_id, "\n", file = stderr())
+            log_debug("[InputProxy] get: name=", name, ", node_id=", node_id, "\n", file = stderr())
 
             # Get value from executor
             executor <- self$executor
@@ -165,7 +165,7 @@ InputProxy <- R6::R6Class("InputProxy",
         },
         error = function(e) {
           # Log error
-          cat("[InputProxy] ERROR: ", conditionMessage(e), "\n", file = stderr())
+          log_debug("[InputProxy] ERROR: ", conditionMessage(e), "\n", file = stderr())
           # If there's any error, return empty string
           return("")
         }

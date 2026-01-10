@@ -66,10 +66,10 @@ ReactiveGraph <- R6::R6Class("ReactiveGraph",
       in_degree <- new.env(parent = emptyenv())
 
       all_nodes <- self$get_all_nodes()
-      cat("[Graph] topological_sort: found", length(all_nodes), "nodes\n", file = stderr())
+      log_debug("[Graph] topological_sort: found", length(all_nodes), "nodes\n", file = stderr())
 
       if (length(all_nodes) == 0) {
-        cat("[Graph] topological_sort: WARNING - no nodes in graph!\n", file = stderr())
+        log_debug("[Graph] topological_sort: WARNING - no nodes in graph!\n", file = stderr())
         return(character(0))
       }
 
@@ -88,7 +88,7 @@ ReactiveGraph <- R6::R6Class("ReactiveGraph",
         node_ids_from_edges <- c(node_ids_from_edges, edge$from, edge$to)
       }
       all_node_ids <- unique(c(node_ids_from_nodes, node_ids_from_edges))
-      cat("[Graph] topological_sort: total unique node IDs (from nodes + edges):", length(all_node_ids), "\n", file = stderr())
+      log_debug("[Graph] topological_sort: total unique node IDs (from nodes + edges):", length(all_node_ids), "\n", file = stderr())
 
       # Initialize all node IDs (including those only in edges)
       for (node_id in all_node_ids) {
@@ -101,11 +101,11 @@ ReactiveGraph <- R6::R6Class("ReactiveGraph",
       }
 
       # Build graph
-      cat("[Graph] topological_sort: processing", length(self$edges), "edges\n", file = stderr())
+      log_debug("[Graph] topological_sort: processing", length(self$edges), "edges\n", file = stderr())
       for (edge in self$edges) {
         from <- edge$from
         to <- edge$to
-        cat("[Graph] topological_sort: edge from", from, "to", to, "\n", file = stderr())
+        log_debug("[Graph] topological_sort: edge from", from, "to", to, "\n", file = stderr())
 
         # Add edge
         if (exists(from, envir = adj, inherits = FALSE)) {
@@ -126,24 +126,24 @@ ReactiveGraph <- R6::R6Class("ReactiveGraph",
       result <- character(0)
 
       # Find nodes with in-degree 0 (check all node IDs, not just those in all_nodes)
-      cat("[Graph] topological_sort: checking", length(all_node_ids), "node IDs for in-degree 0\n", file = stderr())
+      log_debug("[Graph] topological_sort: checking", length(all_node_ids), "node IDs for in-degree 0\n", file = stderr())
       for (node_id in all_node_ids) {
         if (exists(node_id, envir = in_degree, inherits = FALSE)) {
           deg <- get(node_id, envir = in_degree, inherits = FALSE)
-          cat("[Graph] topological_sort: node", node_id, "has in-degree", deg, "\n", file = stderr())
+          log_debug("[Graph] topological_sort: node", node_id, "has in-degree", deg, "\n", file = stderr())
           if (deg == 0L) {
             queue <- c(queue, node_id)
-            cat("[Graph] topological_sort: node", node_id, "has in-degree 0, adding to queue\n", file = stderr())
+            log_debug("[Graph] topological_sort: node", node_id, "has in-degree 0, adding to queue\n", file = stderr())
           }
         } else {
-          cat("[Graph] topological_sort: WARNING - node", node_id, "not found in in_degree environment\n", file = stderr())
+          log_debug("[Graph] topological_sort: WARNING - node", node_id, "not found in in_degree environment\n", file = stderr())
         }
       }
 
-      cat("[Graph] topological_sort: initial queue size:", length(queue), "\n", file = stderr())
+      log_debug("[Graph] topological_sort: initial queue size:", length(queue), "\n", file = stderr())
       if (length(queue) == 0 && length(all_node_ids) > 0) {
-        cat("[Graph] topological_sort: WARNING - no nodes with in-degree 0, but we have", length(all_node_ids), "node IDs!\n", file = stderr())
-        cat("[Graph] topological_sort: Node IDs:", paste(all_node_ids, collapse = ", "), "\n", file = stderr())
+        log_debug("[Graph] topological_sort: WARNING - no nodes with in-degree 0, but we have", length(all_node_ids), "node IDs!\n", file = stderr())
+        log_debug("[Graph] topological_sort: Node IDs:", paste(all_node_ids, collapse = ", "), "\n", file = stderr())
       }
 
       while (length(queue) > 0) {

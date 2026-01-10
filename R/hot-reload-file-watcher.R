@@ -28,7 +28,7 @@ FileWatcher <- R6::R6Class("FileWatcher",
       }
       
       abs_path <- normalizePath(file_path)
-      cat("[FileWatcher] watch() called for:", abs_path, "callback:", !is.null(callback), "\n", file = stderr())
+      log_debug("[FileWatcher] watch() called for:", abs_path, "callback:", !is.null(callback), "\n", file = stderr())
       
       # Store file
       self$watched_files <- c(self$watched_files, list(abs_path))
@@ -36,14 +36,14 @@ FileWatcher <- R6::R6Class("FileWatcher",
       # Store modification time
       mtime <- file.mtime(abs_path)
       assign(abs_path, mtime, envir = self$file_mtimes)
-      cat("[FileWatcher] Stored mtime for", abs_path, ":", mtime, "\n", file = stderr())
+      log_debug("[FileWatcher] Stored mtime for", abs_path, ":", mtime, "\n", file = stderr())
       
       # Store callback
       if (!is.null(callback)) {
         self$callbacks[[abs_path]] <- callback
-        cat("[FileWatcher] Stored callback for", abs_path, "\n", file = stderr())
+        log_debug("[FileWatcher] Stored callback for", abs_path, "\n", file = stderr())
       } else {
-        cat("[FileWatcher] WARNING: No callback provided for", abs_path, "\n", file = stderr())
+        log_debug("[FileWatcher] WARNING: No callback provided for", abs_path, "\n", file = stderr())
       }
       
       invisible(NULL)
@@ -57,7 +57,7 @@ FileWatcher <- R6::R6Class("FileWatcher",
       }
       
       abs_dir <- normalizePath(dir_path)
-      cat("[FileWatcher] Watching directory:", abs_dir, "pattern:", pattern, "recursive:", recursive, "\n", file = stderr())
+      log_debug("[FileWatcher] Watching directory:", abs_dir, "pattern:", pattern, "recursive:", recursive, "\n", file = stderr())
       
       # Find all matching files
       files <- list.files(
@@ -67,11 +67,11 @@ FileWatcher <- R6::R6Class("FileWatcher",
         recursive = recursive
       )
       
-      cat("[FileWatcher] Found", length(files), "files matching pattern\n", file = stderr())
+      log_debug("[FileWatcher] Found", length(files), "files matching pattern\n", file = stderr())
       
       # Watch each file
       for (file in files) {
-        cat("[FileWatcher] Watching file:", file, "\n", file = stderr())
+        log_debug("[FileWatcher] Watching file:", file, "\n", file = stderr())
         self$watch(file, callback)
       }
       
@@ -110,22 +110,22 @@ FileWatcher <- R6::R6Class("FileWatcher",
         
         if (current_mtime > stored_mtime) {
           # File changed!
-          cat("[FileWatcher] File changed detected:", file_path, "\n", file = stderr())
-          cat("[FileWatcher] Old mtime:", stored_mtime, ", New mtime:", current_mtime, "\n", file = stderr())
+          log_debug("[FileWatcher] File changed detected:", file_path, "\n", file = stderr())
+          log_debug("[FileWatcher] Old mtime:", stored_mtime, ", New mtime:", current_mtime, "\n", file = stderr())
           assign(file_path, current_mtime, envir = self$file_mtimes)
           
           # Call callback
           callback <- self$callbacks[[file_path]]
           if (!is.null(callback)) {
-            cat("[FileWatcher] Calling callback for:", file_path, "\n", file = stderr())
+            log_debug("[FileWatcher] Calling callback for:", file_path, "\n", file = stderr())
             tryCatch({
               callback(file_path)
             }, error = function(e) {
               warning("Error in file watcher callback: ", conditionMessage(e))
-              cat("[FileWatcher] ERROR in callback:", conditionMessage(e), "\n", file = stderr())
+              log_debug("[FileWatcher] ERROR in callback:", conditionMessage(e), "\n", file = stderr())
             })
           } else {
-            cat("[FileWatcher] WARNING: No callback found for:", file_path, "\n", file = stderr())
+            log_debug("[FileWatcher] WARNING: No callback found for:", file_path, "\n", file = stderr())
           }
         }
       }

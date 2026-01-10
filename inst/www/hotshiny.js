@@ -6,18 +6,25 @@
 (function (global) {
   'use strict';
 
-  // Import dependencies (would be loaded separately in real implementation)
-  // const WebSocketClient = require('./websocket-client.js');
-  // const { VirtualDOM, DOMDiff, DOMPatcher } = require('./dom-diff.js');
-  // const ReactiveClient = require('./reactive-client.js');
+  // Debug logging - set window.HOTSHINY_DEBUG = true to enable
+  const DEBUG = () => window.HOTSHINY_DEBUG === true;
+  const logDebug = (...args) => { if (DEBUG()) console.log('[hotShiny]', ...args); };
+  const logWarn = (...args) => { if (DEBUG()) console.warn('[hotShiny]', ...args); };
+  const logError = (...args) => console.error('[hotShiny]', ...args);  // Errors always show
 
   class HotShiny {
     constructor(options = {}) {
       this.options = {
         wsUrl: options.wsUrl || this.getWebSocketUrl(),
         autoConnect: options.autoConnect !== false,
+        debug: options.debug || false,
         ...options
       };
+      
+      // Enable debug mode via option
+      if (this.options.debug) {
+        window.HOTSHINY_DEBUG = true;
+      }
 
       this.wsClient = null;
       this.reactiveClient = new ReactiveClient();
@@ -94,7 +101,7 @@
         // Check if this is the initial page load by looking for a flag
         const initialValue = input.value || '';
         if (initialValue !== '' && !this.initialValuesSent) {
-          console.log(`[hotShiny] Sending initial value for ${inputId}: ${initialValue}`);
+          logDebug(` Sending initial value for ${inputId}: ${initialValue}`);
           // Use a small delay to ensure WebSocket is connected
           setTimeout(() => {
             this.sendInput(inputId, initialValue);
@@ -173,7 +180,7 @@
     handleGraphUpdate(graphData) {
       // Rebuild UI based on new graph
       // This would involve rendering the UI from the graph structure
-      console.log('Graph updated:', graphData);
+      logDebug('Graph updated:', graphData);
     }
 
     handleValueUpdate(data) {
@@ -185,20 +192,20 @@
       const valuePreview = (typeof value === 'string' && value.length > 100) 
         ? value.substring(0, 100) + `... [truncated, length=${value.length}]`
         : value;
-      console.log(`[hotShiny] Value update received: nodeId=${nodeId}, outputName=${outputName}, value="${valuePreview}"`);
+      logDebug(` Value update received: nodeId=${nodeId}, outputName=${outputName}, value="${valuePreview}"`);
       
       // Check if this is a plot value
       if (typeof value === 'string' && value.startsWith('data:image/')) {
-        console.log(`[hotShiny] Detected plot image data, length: ${value.length}`);
+        logDebug(` Detected plot image data, length: ${value.length}`);
       }
 
       // If we have an output_name, update that element directly
       if (outputName) {
         const updated = this.updateOutputElement(outputName, value);
         if (updated) {
-          console.log(`[hotShiny] Updated output element "${outputName}" with value "${value}"`);
+          logDebug(` Updated output element "${outputName}" with value "${value}"`);
         } else {
-          console.warn(`[hotShiny] Could not find output element "${outputName}"`);
+          logWarn(` Could not find output element "${outputName}"`);
         }
       } else if (nodeId) {
         // Find and update the corresponding UI element
@@ -227,7 +234,7 @@
     }
 
     handleHotReload(reloadData) {
-      console.log('Hot reload:', reloadData.summary);
+      logDebug('Hot reload:', reloadData.summary);
 
       // Notify before reload
       this.notifyHotReload(reloadData);
@@ -240,7 +247,7 @@
       
       // If the UI structure changed significantly, we may need to fetch new HTML
       // But for now, just log and let value updates handle it
-      console.log('[hotShiny] Hot reload complete - output values will be updated via WebSocket');
+      logDebug(' Hot reload complete - output values will be updated via WebSocket');
       
       // Show a brief notification to the user
       this.showHotReloadNotification();
@@ -313,19 +320,19 @@
         
         // Check if this is a plot output (has class shiny-plot-output)
         if (element.classList.contains('shiny-plot-output')) {
-          console.log(`[hotShiny] Updating plot output element "${outputName}"`);
-          console.log(`[hotShiny] Element found:`, element);
-          console.log(`[hotShiny] Value type: ${typeof value}, length: ${stringValue.length}`);
+          logDebug(` Updating plot output element "${outputName}"`);
+          logDebug(` Element found:`, element);
+          logDebug(` Value type: ${typeof value}, length: ${stringValue.length}`);
           
           // For plot outputs, check if value is a base64 image
           if (stringValue && stringValue.startsWith('data:image/')) {
-            console.log(`[hotShiny] Plot image data detected, length: ${stringValue.length}`);
-            console.log(`[hotShiny] Image data preview: ${stringValue.substring(0, 50)}...`);
+            logDebug(` Plot image data detected, length: ${stringValue.length}`);
+            logDebug(` Image data preview: ${stringValue.substring(0, 50)}...`);
             
             // Create or update img element
             let img = element.querySelector('img');
             if (!img) {
-              console.log(`[hotShiny] Creating new img element for plot`);
+              logDebug(` Creating new img element for plot`);
               img = document.createElement('img');
               img.style.maxWidth = '100%';
               img.style.height = 'auto';
@@ -334,11 +341,11 @@
             }
             
             // Set the image source
-            console.log(`[hotShiny] Setting img.src (length: ${stringValue.length})`);
+            logDebug(` Setting img.src (length: ${stringValue.length})`);
             img.src = stringValue;
             
             img.onload = () => {
-              console.log(`[hotShiny] Plot image loaded successfully, dimensions: ${img.naturalWidth}x${img.naturalHeight}`);
+              logDebug(` Plot image loaded successfully, dimensions: ${img.naturalWidth}x${img.naturalHeight}`);
             };
             img.onerror = (e) => {
               console.error(`[hotShiny] Error loading plot image:`, e);
@@ -346,11 +353,11 @@
               console.error(`[hotShiny] Image src preview: ${img.src.substring(0, 100)}`);
             };
             
-            console.log(`[hotShiny] Plot img element:`, img);
+            logDebug(` Plot img element:`, img);
             return true;
           } else if (stringValue === '' || stringValue === 'null' || stringValue === 'undefined') {
             // Clear the plot
-            console.log(`[hotShiny] Clearing plot output (empty value)`);
+            logDebug(` Clearing plot output (empty value)`);
             const img = element.querySelector('img');
             if (img) {
               img.remove();
@@ -368,8 +375,8 @@
             element.style.padding = '10px';
             return true;
           } else {
-            console.warn(`[hotShiny] Plot output received non-image value:`, stringValue.substring(0, 200));
-            console.warn(`[hotShiny] Value starts with:`, stringValue.substring(0, 20));
+            logWarn(` Plot output received non-image value:`, stringValue.substring(0, 200));
+            logWarn(` Value starts with:`, stringValue.substring(0, 20));
             element.textContent = `Plot error: ${stringValue.substring(0, 100)}`;
             element.style.color = 'red';
             element.style.padding = '10px';
@@ -384,7 +391,7 @@
         }
         return true;
       } else {
-        console.warn(`[hotShiny] Output element not found: ${outputName}. Available elements:`,
+        logWarn(` Output element not found: ${outputName}. Available elements:`,
           Array.from(document.querySelectorAll('[id], [data-output-id]')).map(el => ({
             id: el.id,
             dataOutputId: el.getAttribute('data-output-id'),
@@ -425,13 +432,13 @@
 
     sendInput(inputName, value) {
       if (this.wsClient && this.wsClient.connected) {
-        console.log(`[hotShiny] Sending input: ${inputName} = "${value}"`);
+        logDebug(` Sending input: ${inputName} = "${value}"`);
         this.wsClient.send('user_input', {
           input_name: inputName,
           value: value
         });
       } else {
-        console.warn('[hotShiny] WebSocket not connected, cannot send input');
+        logWarn(' WebSocket not connected, cannot send input');
       }
     }
 

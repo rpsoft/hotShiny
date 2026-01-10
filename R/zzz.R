@@ -1,7 +1,26 @@
 # Package initialization
 # This file is loaded last (per Collate field in DESCRIPTION)
 
+# Debug logging - only prints when hotshiny.verbose option is TRUE
+log_debug <- function(...) {
+ if (isTRUE(getOption("hotshiny.verbose", FALSE))) {
+    cat(..., "\n", sep = "")
+  }
+}
+
+# Info logging - always prints important messages
+log_info <- function(...) {
+  message("[hotShiny] ", ...)
+}
+
 .onLoad <- function(libname, pkgname) {
+  # Set default options
+  op <- options()
+  op.hotshiny <- list(
+    hotshiny.verbose = FALSE
+  )
+  toset <- !(names(op.hotshiny) %in% names(op))
+  if (any(toset)) options(op.hotshiny[toset])
   # Register S3 methods dynamically
   ns <- asNamespace("hotShiny")
   
