@@ -57,41 +57,41 @@ server <- function(input, output, session) {
 }
 
 # Create app
-app_obj <- app(ui, server)
-
-# Enable features
-#enable_hot_reload(app_obj)
-# enable_strict_mode(app_obj)
-# enable_time_travel(app_obj)
-
-
-# Enable hot reload (in development)
-# Watch the current file and its directory
-# Get the path to this file
-app_file <- tryCatch({
-  # Try to get from sys.source context
-  frames <- sys.frames()
-  for (frame in frames) {
-    if (exists("ofile", envir = frame, inherits = FALSE)) {
-      file <- get("ofile", envir = frame, inherits = FALSE)
-      if (!is.null(file) && file.exists(file)) {
-        return(normalizePath(file))
-      }
-    }
-  }
-  # Fallback: use relative path
-  normalizePath("tests/examples/complex-app.R", mustWork = TRUE)
-}, error = function(e) {
-  # Final fallback
-  file.path(getwd(), "tests/examples/complex-app.R")
-})
-
-app_dir <- dirname(app_file)
-cat("[App] Watching file:", app_file, "\n", file = stderr())
-cat("[App] Watching directory:", app_dir, "\n", file = stderr())
-enable_hot_reload(app_obj, watch_paths = c(app_file, app_dir))
-
-# Run app
-# The server will start and be accessible at http://localhost:3838
-# Press ESC or Ctrl+C to stop the server
-app_obj$runApp(port = 3838)
+# app_obj <- app(ui, server)
+# 
+# # Enable features
+# #enable_hot_reload(app_obj)
+# # enable_strict_mode(app_obj)
+# # enable_time_travel(app_obj)
+# 
+# 
+# # Enable hot reload (in development)
+# # Watch the current file and its directory
+# # Get the path to this file
+# app_file <- tryCatch({
+#   # Try to get from sys.source context
+#   frames <- sys.frames()
+#   for (frame in frames) {
+#     if (exists("ofile", envir = frame, inherits = FALSE)) {
+#       file <- get("ofile", envir = frame, inherits = FALSE)
+#       if (!is.null(file) && file.exists(file)) {
+#         return(normalizePath(file))
+#       }
+#     }
+#   }
+#   # Fallback: use relative path
+#   normalizePath("tests/examples/complex-app.R", mustWork = TRUE)
+# }, error = function(e) {
+#   # Final fallback
+#   file.path(getwd(), "tests/examples/complex-app.R")
+# })
+# 
+# app_dir <- dirname(app_file)
+# cat("[App] Watching file:", app_file, "\n", file = stderr())
+# cat("[App] Watching directory:", app_dir, "\n", file = stderr())
+# enable_hot_reload(app_obj, watch_paths = c(app_file, app_dir))
+# 
+# # Run app
+# # The server will start and be accessible at http://localhost:3838
+# # Press ESC or Ctrl+C to stop the server
+# app_obj$runApp(port = 3838)
