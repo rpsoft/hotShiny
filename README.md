@@ -1,5 +1,7 @@
 # hotShiny
 
+https://shiny.posit.co/r/reference/shiny/1.6.0/
+
 A Shiny-compatible R package that supports hot-reloading by transforming Shiny's execution model into a declarative, diffable reactive graph. Maintains API compatibility while fundamentally changing runtime semantics.
 
 ## Features
@@ -76,6 +78,65 @@ Some patterns are not supported:
 - ❌ Meta-programming (`get()`, `assign()`)
 - ❌ Global environment mutation (`<<-`)
 - ❌ Dynamic output assignment
+
+### Unsupported Pattern Examples
+
+**Non-deterministic side effects** - Code that produces different results on re-execution:
+
+```r
+# ❌ Avoid: Random values without seed
+output$random <- renderText({
+
+  sample(1:100, 1)  # Different result each time
+})
+
+# ❌ Avoid: System time dependencies
+output$timestamp <- renderText({
+  Sys.time()  # Changes on hot reload
+})
+```
+
+**Meta-programming** - Dynamic variable access breaks dependency tracking:
+
+```r
+# ❌ Avoid: Dynamic variable access
+server <- function(input, output, session) {
+  output$result <- renderText({
+    var_name <- input$selected_var
+    get(var_name, envir = parent.frame())  # Dependencies not tracked
+  })
+}
+
+# ❌ Avoid: Dynamic assignment
+observe({
+  assign(paste0("value_", input$id), input$value, envir = .GlobalEnv)
+})
+```
+
+**Global environment mutation** - Superassignment creates hidden state:
+
+```r
+# ❌ Avoid: Global state mutation
+counter <- 0
+server <- function(input, output, session) {
+  observe({
+    counter <<- counter + 1  # Hidden state, lost on hot reload
+  })
+}
+```
+
+**Dynamic output assignment** - Outputs must be statically defined:
+
+```r
+# ❌ Avoid: Dynamic output creation
+server <- function(input, output, session) {
+  observe({
+    output[[paste0("plot_", input$id)]] <- renderPlot({
+      plot(1:10)
+    })
+  })
+}
+```
 
 ## Development Features
 

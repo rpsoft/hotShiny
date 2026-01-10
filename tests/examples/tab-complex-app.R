@@ -40,7 +40,7 @@ server <- function(input, output, session) {
   
   # Dependent reactive
   combined <- reactive({
-    paste("Sum:", sum_value(), "Product ", product_value(), "Subtract ", sum_value() - product_value())
+    paste("Sums:", sum_value(), "Product ", product_value(), "Subtract ", sum_value() - product_value())
   })
   
   # Render outputs
@@ -54,7 +54,7 @@ server <- function(input, output, session) {
   
   output$plot <- renderPlot({
     # Simple plot
-    plot(1:10, main = combined())
+    plot(1:input$a, main = combined())
   })
   
   # Observer
