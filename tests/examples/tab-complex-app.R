@@ -7,11 +7,12 @@ ui <- function() {
   hotShiny::div(
       sidebarLayout(
         sidebarPanel = sidebarPanel(
-          h1("Hot Reload - Values Preservedddd!"),
+          h1("Hot Reload - Values Preserved!"),
           numericInput("a", "Value A:", value = 2),
           numericInput("b", "Value B:", value = 7),
           sliderInput("sliding", "This is a slider", 1, 10, 5),
-          checkboxInput("checkit", "hello")
+          checkboxInput("checkit", "hello"),
+          radioButtons("radios", "choices here", c("bread", "cheese", "beer"))
         ),
         mainPanel(
           div("middle"),
@@ -19,7 +20,8 @@ ui <- function() {
           textOutput("product"),
           plotOutput("plot"),
           textOutput("isTrue"),
-          textOutput("isFalse")
+          textOutput("isFalse"),
+          textOutput("radioOuts")
         ),
         position = c("left", "right"),
         fluid = TRUE
@@ -67,6 +69,10 @@ server <- function(input, output, session) {
   output$plot <- renderPlot({
     # Simple plot
     plot(1:input$sliding, main = combined())
+  })
+  
+  output$radioOuts <- renderText({
+    input$radios
   })
   
   # Observer
