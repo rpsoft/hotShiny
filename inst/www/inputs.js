@@ -229,7 +229,10 @@
     }
 
     find(scope) {
-      return scope.querySelectorAll('.form-check input[type="checkbox"][data-input-id]:not([name])');
+      // Find single checkboxes (not in checkbox groups)
+      // Checkbox groups are handled by CheckboxGroupInputBinding
+      // Single checkboxes are in .form-check but not in .shiny-input-checkboxgroup
+      return scope.querySelectorAll('.form-check:not(.shiny-input-checkboxgroup) input[type="checkbox"][data-input-id]');
     }
 
     getValue(el) {
