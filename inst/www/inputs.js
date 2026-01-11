@@ -840,6 +840,25 @@
       }
     });
 
+    // Replace UI handler (for hot reload UI updates)
+    global.hotShiny.wsClient.registerHandler('shiny-replace-ui', (message) => {
+      const data = message.data;
+      const selector = data.selector || '#app';
+      const html = data.html || '';
+      
+      const target = document.querySelector(selector);
+      if (target) {
+        target.innerHTML = html;
+        
+        // Re-initialize inputs in new content
+        if (global.hotShinyInputManager) {
+          global.hotShinyInputManager.initialize(document);
+        }
+      } else {
+        console.warn('shiny-replace-ui: Target element not found:', selector);
+      }
+    });
+
     // Update query string handler
     global.hotShiny.wsClient.registerHandler('shiny-update-query-string', (message) => {
       const data = message.data;

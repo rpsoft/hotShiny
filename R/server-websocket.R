@@ -226,6 +226,20 @@ WebSocketServer <- R6::R6Class("WebSocketServer",
       }
     },
     
+    # Send UI replacement (for hot reload UI updates)
+    send_ui_replace = function(html) {
+      ui_data <- list(
+        html = html,
+        selector = "#app"
+      )
+      
+      # Send to all connections as a custom message type
+      # The client will register a handler for 'shiny-replace-ui'
+      for (conn in self$connections) {
+        self$send_message(conn, "shiny-replace-ui", ui_data)
+      }
+    },
+    
     # Send error
     send_error = function(ws, error_message) {
       error_data <- list(

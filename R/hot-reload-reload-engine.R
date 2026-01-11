@@ -146,6 +146,10 @@ HotReloadEngine <- R6::R6Class("HotReloadEngine",
       log_debug("[HotReload] File changed: ", file_path)
       log_debug("[HotReload] handle_file_change: Processing file change for:", file_path, "\n", file = stderr())
 
+      # Store old UI to detect changes
+      old_ui <- self$app$ui
+      ui_changed <- FALSE
+
       # Attempt to extract updated app components from the file
       tryCatch(
         {
@@ -192,6 +196,15 @@ HotReloadEngine <- R6::R6Class("HotReloadEngine",
             log_debug("[HotReload] updated_server is function:", is.function(updated_server), "\n", file = stderr())
             log_debug("[HotReload] updated_ui type:", class(updated_ui), "\n", file = stderr())
 
+            # Check if UI changed
+            # For functions, we compare the objects (new function = changed)
+            # For other types, we use identical() comparison
+            if (!identical(old_ui, updated_ui)) {
+              ui_changed <- TRUE
+              log_debug("[HotReload] UI changed, will regenerate HTML\n", file = stderr())
+              log_debug("[HotReload] Old UI type:", class(old_ui), ", New UI type:", class(updated_ui), "\n", file = stderr())
+            }
+
             # Update current app components
             self$app$ui <- updated_ui
             self$app$server_func <- updated_server
@@ -214,7 +227,14 @@ HotReloadEngine <- R6::R6Class("HotReloadEngine",
               }
             }
             if (exists("ui", envir = temp_env)) { # ui can be function or tag
-              self$app$ui <- temp_env$ui
+              updated_ui <- temp_env$ui
+              # Check if UI changed
+              if (!identical(old_ui, updated_ui)) {
+                ui_changed <- TRUE
+                log_debug("[HotReload] UI changed, will regenerate HTML\n", file = stderr())
+                log_debug("[HotReload] Old UI type:", class(old_ui), ", New UI type:", class(updated_ui), "\n", file = stderr())
+              }
+              self$app$ui <- updated_ui
               log_debug("[HotReload] Updated ui from variable")
               log_debug("[HotReload] Updated ui from variable\n", file = stderr())
             } else {
@@ -237,6 +257,20 @@ HotReloadEngine <- R6::R6Class("HotReloadEngine",
       if (!is.function(self$app$server_func)) {
         log_debug("[HotReload] ERROR: app$server_func is not a function! Cannot reload.\n", file = stderr())
         return(invisible(NULL))
+      }
+
+      # If UI changed, regenerate and send updated HTML
+      if (ui_changed && !is.null(self$app$ws_server)) {
+        tryCatch({
+          log_debug("[HotReload] UI changed, regenerating HTML\n", file = stderr())
+          new_ui_html <- self$app$render_app_html()
+          log_debug("[HotReload] Generated new UI HTML, length:", nchar(new_ui_html), "\n", file = stderr())
+          self$app$ws_server$send_ui_replace(new_ui_html)
+          log_debug("[HotReload] Sent UI replacement to clients\n", file = stderr())
+        }, error = function(e) {
+          warning("[HotReload] Failed to regenerate/send UI: ", conditionMessage(e))
+          log_debug("[HotReload] ERROR regenerating UI: ", conditionMessage(e), "\n", file = stderr())
+        })
       }
 
       # Perform hot reload

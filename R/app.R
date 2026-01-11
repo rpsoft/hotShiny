@@ -974,6 +974,87 @@ HotShinyApp <- R6::R6Class("HotShinyApp",
       html
     },
 
+    # Render just the app container HTML (without full page wrapper)
+    # Used for hot reload UI updates
+    render_app_html = function() {
+      # Get UI functions from namespace or load them
+      ns <- asNamespace("hotShiny")
+      base_path <- getwd()
+      
+      # Create environment with all UI functions
+      ui_env <- new.env(parent = globalenv())
+      
+      # Load UI functions from tags.R and inputs.R if available
+      if (file.exists(file.path(base_path, "R/ui-tags.R"))) {
+        sys.source(file.path(base_path, "R/ui-tags.R"), envir = ui_env)
+      }
+      if (file.exists(file.path(base_path, "R/ui-inputs.R"))) {
+        sys.source(file.path(base_path, "R/ui-inputs.R"), envir = ui_env)
+      }
+      if (file.exists(file.path(base_path, "R/ui-outputs.R"))) {
+        sys.source(file.path(base_path, "R/ui-outputs.R"), envir = ui_env)
+      }
+      if (file.exists(file.path(base_path, "R/ui-layout.R"))) {
+        sys.source(file.path(base_path, "R/ui-layout.R"), envir = ui_env)
+      }
+      if (file.exists(file.path(base_path, "R/ui-navigation.R"))) {
+        sys.source(file.path(base_path, "R/ui-navigation.R"), envir = ui_env)
+      }
+      
+      # Also try namespace functions
+      ui_funcs <- c("tag", "tags", "tagList", "div", "span", "p", "h1", "h2", "h3", 
+                    "h4", "h5", "h6", "a", "br", "hr", "pre", "code", "img", "strong", 
+                    "em", "ul", "ol", "li", "HTML", "textInput", "numericInput", 
+                    "textOutput", "plotOutput", "textAreaInput", "passwordInput",
+                    "selectInput", "checkboxInput", "checkboxGroupInput", "radioButtons",
+                    "sliderInput", "dateInput", "dateRangeInput", "actionButton",
+                    "actionLink", "fileInput", "fluidPage", "fluidRow", "fixedPage",
+                    "sidebarLayout", "sidebarPanel", "mainPanel", "wellPanel",
+                    "tabsetPanel", "tabPanel", "navbarPage", "column", "verbatimTextOutput",
+                    "htmlOutput", "uiOutput", "imageOutput", "tableOutput", "dataTableOutput",
+                    "downloadButton", "downloadLink", "icon", "helpText", "titlePanel",
+                    "conditionalPanel", "fillPage", "fillRow", "fillCol")
+      
+      for (fn in ui_funcs) {
+        if (!exists(fn, envir = ui_env, inherits = FALSE)) {
+          if (exists(fn, envir = ns, inherits = FALSE)) {
+            assign(fn, get(fn, envir = ns), envir = ui_env)
+          }
+        }
+      }
+      
+      # Try to evaluate UI function
+      ui_result <- tryCatch(
+        {
+          if (is.function(self$ui)) {
+            ui_func <- self$ui
+            environment(ui_func) <- ui_env
+            result <- ui_func()
+            result
+          } else {
+            self$ui
+          }
+        },
+        error = function(e) {
+          warning("Error rendering UI: ", conditionMessage(e))
+          if (exists("div", envir = ui_env)) {
+            get("div", envir = ui_env)(paste("Error rendering UI:", conditionMessage(e)))
+          } else {
+            list(name = "div", attribs = list(), children = list(paste("Error rendering UI:", conditionMessage(e))))
+          }
+        }
+      )
+
+      # Convert UI to HTML using tag_to_html from tags.R
+      ui_html <- if (exists("tag_to_html", envir = ui_env)) {
+        get("tag_to_html", envir = ui_env)(ui_result)
+      } else {
+        self$ui_to_html(ui_result)
+      }
+
+      return(ui_html)
+    },
+
     # Convert UI object to HTML string (fallback method)
     ui_to_html = function(ui_obj) {
       if (is.null(ui_obj)) {
