@@ -3,9 +3,9 @@
  * Client-side handlers for all input types
  */
 
-(function(global) {
+(function (global) {
   'use strict';
-  
+
   // Debug logging - uses global flag from hotshiny.js
   const DEBUG = () => window.HOTSHINY_DEBUG === true;
   const logDebug = (...args) => { if (DEBUG()) console.log(...args); };
@@ -551,7 +551,7 @@
       if (!el.files || el.files.length === 0) {
         return null;
       }
-      
+
       const files = [];
       for (const file of el.files) {
         files.push({
@@ -619,7 +619,7 @@
     constructor() {
       this.bindings = new Map();
       this.elements = new Map();
-      
+
       // Register default bindings
       this.register(new TextInputBinding());
       this.register(new TextAreaInputBinding());
@@ -644,7 +644,7 @@
     initialize(scope = document) {
       for (const [name, binding] of this.bindings) {
         const elements = binding.find(scope);
-        
+
         for (const el of elements) {
           const id = binding.getId(el);
           if (!id) continue;
@@ -700,6 +700,85 @@
       }
       return null;
     }
+
+    /**
+     * Capture all current input values for state preservation during hot-reload.
+     * This captures values from all registered input bindings in the given scope.
+     * @param {Element} scope - The DOM element scope to capture inputs from
+     * @returns {Map} A map of inputId -> { value, bindingName }
+     */
+    captureAllInputState(scope = document) {
+      const state = new Map();
+
+      for (const [name, binding] of this.bindings) {
+        try {
+          const elements = binding.find(scope);
+          for (const el of elements) {
+            const id = binding.getId(el);
+            if (!id) continue;
+
+            const value = binding.getValue(el);
+            if (value !== null && value !== undefined) {
+              state.set(id, { value, bindingName: name });
+              logDebug(`[InputManager] Captured state: ${id} = `, value);
+            }
+          }
+        } catch (e) {
+          logWarn(`[InputManager] Error capturing state for binding ${name}:`, e);
+        }
+      }
+
+      logDebug(`[InputManager] Captured ${state.size} input values for hot-reload`);
+      return state;
+    }
+
+    /**
+     * Restore previously captured input values after DOM replacement.
+     * This finds elements by their input ID and restores values using the appropriate binding.
+     * @param {Map} state - The captured state from captureAllInputState()
+     * @param {Element} scope - The DOM element scope to restore inputs in
+     * @param {boolean} sendToServer - Whether to re-send restored values to the server
+     */
+    restoreInputState(state, scope = document, sendToServer = true) {
+      let restored = 0;
+
+      for (const [inputId, data] of state) {
+        const binding = this.bindings.get(data.bindingName);
+        if (!binding) {
+          logWarn(`[InputManager] Binding not found for restore: ${data.bindingName}`);
+          continue;
+        }
+
+        try {
+          // Find the element again in the new DOM
+          const elements = binding.find(scope);
+          for (const el of elements) {
+            const id = binding.getId(el);
+            if (id !== inputId) continue;
+
+            // Restore the value
+            binding.setValue(el, data.value);
+            logDebug(`[InputManager] Restored state: ${inputId} = `, data.value);
+            restored++;
+
+            // Update our internal reference
+            this.elements.set(id, { element: el, binding: binding });
+
+            // Re-send to server to maintain sync
+            if (sendToServer) {
+              this.sendValue(inputId, data.value);
+            }
+
+            break; // Found and restored, move to next input
+          }
+        } catch (e) {
+          logWarn(`[InputManager] Error restoring state for ${inputId}:`, e);
+        }
+      }
+
+      logDebug(`[InputManager] Restored ${restored}/${state.size} input values after hot-reload`);
+      return restored;
+    }
   }
 
   // ========================================================================
@@ -723,7 +802,7 @@
           container.id = 'shiny-modal-container';
           document.body.appendChild(container);
         }
-        
+
         container.innerHTML = data.html;
         const modalEl = container.querySelector('.modal');
         if (modalEl && typeof bootstrap !== 'undefined') {
@@ -742,7 +821,7 @@
     // Notification handler
     global.hotShiny.wsClient.registerHandler('shiny-notification', (message) => {
       const data = message.data;
-      
+
       // Create notification container if not exists
       let container = document.getElementById('shiny-notification-container');
       if (!container) {
@@ -754,7 +833,7 @@
 
       if (data.action === 'show') {
         container.insertAdjacentHTML('beforeend', data.html);
-        
+
         if (data.duration) {
           setTimeout(() => {
             const el = document.getElementById(data.id);
@@ -770,7 +849,7 @@
     // Progress handler
     global.hotShiny.wsClient.registerHandler('shiny-progress', (message) => {
       const data = message.data;
-      
+
       // Create progress container if not exists
       let container = document.getElementById('shiny-progress-container');
       if (!container) {
@@ -816,7 +895,7 @@
     // Insert UI handler
     global.hotShiny.wsClient.registerHandler('shiny-insert-ui', (message) => {
       const data = message.data;
-      const targets = data.multiple 
+      const targets = data.multiple
         ? document.querySelectorAll(data.selector)
         : [document.querySelector(data.selector)];
 
@@ -844,18 +923,36 @@
     });
 
     // Replace UI handler (for hot reload UI updates)
+    // This handler preserves input state across UI replacements
     global.hotShiny.wsClient.registerHandler('shiny-replace-ui', (message) => {
       const data = message.data;
       const selector = data.selector || '#app';
       const html = data.html || '';
-      
+
       const target = document.querySelector(selector);
       if (target) {
+        // Step 1: Capture current input values BEFORE replacing UI
+        let capturedState = null;
+        if (global.hotShinyInputManager) {
+          capturedState = global.hotShinyInputManager.captureAllInputState(target);
+          logDebug('[shiny-replace-ui] Captured input state before replacement');
+        }
+
+        // Step 2: Replace the UI with new HTML
         target.innerHTML = html;
-        
-        // Re-initialize inputs in new content
+
+        // Step 3: Re-initialize inputs in new content
         if (global.hotShinyInputManager) {
           global.hotShinyInputManager.initialize(document);
+        }
+
+        // Step 4: Restore captured input values to new DOM elements
+        if (capturedState && capturedState.size > 0 && global.hotShinyInputManager) {
+          // Small delay to ensure DOM is fully updated
+          setTimeout(() => {
+            global.hotShinyInputManager.restoreInputState(capturedState, target, true);
+            logDebug('[shiny-replace-ui] Restored input state after replacement');
+          }, 50);
         }
       } else {
         console.warn('shiny-replace-ui: Target element not found:', selector);
@@ -867,11 +964,59 @@
       const data = message.data;
       const url = new URL(window.location);
       url.search = data.queryString;
-      
+
       if (data.mode === 'push') {
         window.history.pushState({}, '', url);
       } else {
         window.history.replaceState({}, '', url);
+      }
+    });
+
+    // Restore inputs handler (from server)
+    global.hotShiny.wsClient.registerHandler('shiny-restore-inputs', (message) => {
+      const data = message.data;
+      const inputManager = global.hotShinyInputManager;
+
+      if (inputManager && data.inputs) {
+        logDebug('[shiny-restore-inputs] Restoring inputs from server:', data.inputs);
+        let restored = 0;
+
+        // The server sends inputs as { "id": value, ... }
+        // We need to ensure we map these to the correct elements
+
+        // Ensure input manager is initialized to find elements
+        if (inputManager.elements.size === 0) {
+          inputManager.initialize(document);
+        }
+
+        for (const [inputId, value] of Object.entries(data.inputs)) {
+          // Find binding info for this input ID
+          const info = inputManager.elements.get(inputId);
+
+          if (info && info.binding && info.element) {
+            try {
+              // Only update if value is different? 
+              // Usually the server sends preserved values which might be same as default
+              // or might be different. Safest is to just set it.
+              info.binding.setValue(info.element, value);
+
+              // Also update last value to prevent echo
+              info.element.setAttribute('data-hotshiny-last-value', value);
+
+              logDebug(`[shiny-restore-inputs] Restored ${inputId} = ${value}`);
+              restored++;
+            } catch (e) {
+              console.warn(`[shiny-restore-inputs] Error restoring ${inputId}:`, e);
+            }
+          } else {
+            // Element not found in manager. Might be dynamic UI or not yet initialized?
+            // Try to find it manually for standard inputs?
+            // For now, just log warning
+            // logDebug(`[shiny-restore-inputs] Could not find element/binding for ${inputId}`);
+          }
+        }
+
+        logDebug(`[shiny-restore-inputs] Restored ${restored} inputs from server`);
       }
     });
   }

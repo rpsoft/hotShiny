@@ -240,6 +240,23 @@ WebSocketServer <- R6::R6Class("WebSocketServer",
       }
     },
     
+    # Send restore inputs message with preserved values
+    send_restore_inputs = function(input_values) {
+      if (is.null(input_values) || length(input_values) == 0) {
+        return(invisible(NULL))
+      }
+      
+      restore_data <- list(
+        inputs = input_values,
+        timestamp = as.numeric(Sys.time())
+      )
+      
+      # Send to all connections
+      for (conn in self$connections) {
+        self$send_message(conn, "shiny-restore-inputs", restore_data)
+      }
+    },
+    
     # Send error
     send_error = function(ws, error_message) {
       error_data <- list(

@@ -282,6 +282,27 @@ HotReloadEngine <- R6::R6Class("HotReloadEngine",
           if (!is.null(self$app$ws_server)) {
             self$app$ws_server$send_hot_reload(diff_summary)
             log_debug("[HotReload] Sent hot reload notification to clients\n", file = stderr())
+            
+            # CRITICAL: Send preserved input values to clients
+            # This ensures that even if UI was replaced, inputs are restored
+            state_manager <- self$app$state_manager
+            if (!is.null(state_manager)) {
+              all_values <- state_manager$serialize_state()
+              input_values <- list()
+              
+              for (node_id in names(all_values)) {
+                if (grepl("^input\\.", node_id)) {
+                  # Strip "input." prefix
+                  input_name <- sub("^input\\.", "", node_id)
+                  input_values[[input_name]] <- all_values[[node_id]]
+                }
+              }
+              
+              if (length(input_values) > 0) {
+                log_debug("[HotReload] Sending", length(input_values), "restored inputs to clients\n", file = stderr())
+                self$app$ws_server$send_restore_inputs(input_values)
+              }
+            }
           } else {
             log_debug("[HotReload] WARNING: ws_server is NULL, cannot notify clients\n", file = stderr())
           }
