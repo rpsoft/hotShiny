@@ -20,7 +20,7 @@
         debug: options.debug || false,
         ...options
       };
-      
+
       // Enable debug mode via option
       if (this.options.debug) {
         window.HOTSHINY_DEBUG = true;
@@ -133,7 +133,7 @@
           }
         });
       });
-      
+
       // Mark that initial values have been sent (for first page load)
       this.initialValuesSent = true;
     }
@@ -189,11 +189,11 @@
       const outputName = data.outputName;
 
       // For plot outputs, value might be a very long base64 string
-      const valuePreview = (typeof value === 'string' && value.length > 100) 
+      const valuePreview = (typeof value === 'string' && value.length > 100)
         ? value.substring(0, 100) + `... [truncated, length=${value.length}]`
         : value;
       logDebug(` Value update received: nodeId=${nodeId}, outputName=${outputName}, value="${valuePreview}"`);
-      
+
       // Check if this is a plot value
       if (typeof value === 'string' && value.startsWith('data:image/')) {
         logDebug(` Detected plot image data, length: ${value.length}`);
@@ -244,11 +244,11 @@
       // 1. Re-executed the server function with preserved input values
       // 2. Sent output value updates via WebSocket
       // So we just need to let those updates be applied to the DOM
-      
+
       // If the UI structure changed significantly, we may need to fetch new HTML
       // But for now, just log and let value updates handle it
       logDebug(' Hot reload complete - output values will be updated via WebSocket');
-      
+
       // Show a brief notification to the user
       this.showHotReloadNotification();
     }
@@ -272,7 +272,7 @@
       `;
       notification.textContent = '✓ Hot reload applied';
       document.body.appendChild(notification);
-      
+
       // Remove after 2 seconds
       setTimeout(() => {
         notification.style.opacity = '0';
@@ -317,18 +317,18 @@
       if (element) {
         // Update element based on render type
         const stringValue = value !== null && value !== undefined ? String(value) : '';
-        
+
         // Check if this is a plot output (has class shiny-plot-output)
         if (element.classList.contains('shiny-plot-output')) {
           logDebug(` Updating plot output element "${outputName}"`);
           logDebug(` Element found:`, element);
           logDebug(` Value type: ${typeof value}, length: ${stringValue.length}`);
-          
+
           // For plot outputs, check if value is a base64 image
           if (stringValue && stringValue.startsWith('data:image/')) {
             logDebug(` Plot image data detected, length: ${stringValue.length}`);
             logDebug(` Image data preview: ${stringValue.substring(0, 50)}...`);
-            
+
             // Create or update img element
             let img = element.querySelector('img');
             if (!img) {
@@ -339,11 +339,11 @@
               img.style.display = 'block';
               element.appendChild(img);
             }
-            
+
             // Set the image source
             logDebug(` Setting img.src (length: ${stringValue.length})`);
             img.src = stringValue;
-            
+
             img.onload = () => {
               logDebug(` Plot image loaded successfully, dimensions: ${img.naturalWidth}x${img.naturalHeight}`);
             };
@@ -352,7 +352,7 @@
               console.error(`[hotShiny] Image src length: ${img.src.length}`);
               console.error(`[hotShiny] Image src preview: ${img.src.substring(0, 100)}`);
             };
-            
+
             logDebug(` Plot img element:`, img);
             return true;
           } else if (stringValue === '' || stringValue === 'null' || stringValue === 'undefined') {
@@ -382,9 +382,13 @@
             element.style.padding = '10px';
           }
         }
-        
+
         // For text outputs or other types
-        if (element.tagName === 'DIV' || element.tagName === 'SPAN') {
+        if (element.classList.contains('shiny-html-output')) {
+          element.innerHTML = stringValue;
+        } else if (element.classList.contains('shiny-text-output')) {
+          element.textContent = stringValue;
+        } else if (element.tagName === 'DIV' || element.tagName === 'SPAN') {
           element.textContent = stringValue;
         } else {
           element.innerHTML = stringValue;

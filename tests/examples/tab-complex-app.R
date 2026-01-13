@@ -45,7 +45,7 @@ ui <- function() {
 server <- function(input, output, session) {
   # Multiple reactive expressions
   sum_value <- reactive({
-    input$a + input$b + 10
+    input$a + input$b + 10.89
   })
   
   product_value <- reactive({

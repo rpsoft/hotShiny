@@ -20,9 +20,9 @@ ReactiveExecutor <- R6::R6Class("ReactiveExecutor",
     initialize = function(graph, state_manager = NULL, builder = NULL) {
       self$graph <- graph
       self$state_manager <- if (is.null(state_manager)) StateManager$new() else state_manager
-      # Use baseenv() as parent to avoid picking up variables from globalenv
-      # that might conflict (like if someone has a variable called "input.name")
-      self$execution_env <- new.env(parent = baseenv())
+      # Use globalenv() as parent to ensure access to package functions
+      # This allows functions like hotShiny::iframe or user helpers to be found
+      self$execution_env <- new.env(parent = globalenv())
       self$helper_functions <- new.env(parent = emptyenv())
       self$builder <- builder
       # Load helper functions
@@ -365,9 +365,8 @@ ReactiveExecutor <- R6::R6Class("ReactiveExecutor",
       }
 
       # Create evaluation environment
-      # Use baseenv() as parent to avoid picking up variables from globalenv
-      # that might conflict (like if someone has a variable called "input.name")
-      eval_env <- new.env(parent = baseenv())
+      # Use globalenv() as parent to ensure package functions are visible
+      eval_env <- new.env(parent = globalenv())
 
       # Add reactive dependency values to environment
       # Make them callable (like Shiny's reactive expressions)
@@ -569,9 +568,8 @@ ReactiveExecutor <- R6::R6Class("ReactiveExecutor",
       }
 
       # Create evaluation environment
-      # Use baseenv() as parent to avoid picking up variables from globalenv
-      # that might conflict (like if someone has a variable called "input.name")
-      eval_env <- new.env(parent = baseenv())
+      # Use globalenv() as parent to ensure package functions are visible
+      eval_env <- new.env(parent = globalenv())
 
       # Add reactive dependency values to environment
       # Make them callable (like Shiny's reactive expressions)
@@ -886,7 +884,13 @@ ReactiveExecutor <- R6::R6Class("ReactiveExecutor",
           "text" = as.character(result),
           "table" = result,
           "datatable" = result,
-          "ui" = result,
+          "ui" = {
+            if (inherits(result, "shiny.tag") || inherits(result, "shiny.tag.list") || inherits(result, "html")) {
+              as.character(result)
+            } else {
+              result
+            }
+          },
           result
         )
       }

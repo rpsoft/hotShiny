@@ -49,7 +49,7 @@ ReactiveNode <- R6::R6Class("ReactiveNode",
     compute_hash = function() {
       content <- list(
         type = self$type,
-        deps = sort(self$deps),
+        deps = sort(unlist(self$deps)),
         expr = self$expr
       )
       digest::digest(content, algo = "sha256")

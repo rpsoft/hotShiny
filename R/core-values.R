@@ -54,7 +54,7 @@ ReactiveValues <- R6::R6Class("ReactiveValues",
       node_id <- paste0("reactiveValues.", name)
       if (!exists(name, envir = self$node_ids)) {
         # Create input-like node for this value
-        input_node <- builder$register_input(name, source = get_source_location())
+        input_node <- self$builder$register_input(name, source = get_source_location())
         assign(name, input_node$id, envir = self$node_ids)
       }
     },
@@ -82,11 +82,18 @@ ReactiveValues <- R6::R6Class("ReactiveValues",
 
 # Make ReactiveValues work with $ and [[
 `$.ReactiveValues` <- function(x, name) {
-  x$get(name)
+  if (exists(name, envir = x)) {
+    return(NextMethod())
+  }
+  get("get", envir = x)(name)
 }
 
 `$<-.ReactiveValues` <- function(x, name, value) {
-  x$set(name, value)
+  if (exists(name, envir = x)) {
+    assign(name, value, envir = x)
+    return(x)
+  }
+  get("set", envir = x)(name, value)
   x
 }
 
