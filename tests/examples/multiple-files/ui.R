@@ -9,13 +9,14 @@ ui <- function() {
           h2("This is a subtitle"),
           h3("this is a 3 title"),
           p("this is a paragraph"),
-          numericInput("a", "Value A:", value = 10),
+          numericInput("a", "Value A:", value = 5),
           numericInput("b", "Value B:", value = 20),
           sliderInput("sliding", "This is a slider", 1, 10, 5),
           checkboxInput("checkit", "hello", value = FALSE),
           radioButtons("radios", "choices here", c("bread", "cheese", "beer"))
         ),
         mainPanel(
+          uiOutput("iframe"),
           div("middle"),
           textOutput("sum"),
           textOutput("product"),
@@ -23,7 +24,6 @@ ui <- function() {
           textOutput("isTrue"),
           textOutput("isFalse"),
           textOutput("radioOuts"),
-          uiOutput("iframe"),
           uiOutput("htmlthing")
         ),
         position = c("left", "right"),

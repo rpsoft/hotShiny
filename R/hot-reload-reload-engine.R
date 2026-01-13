@@ -190,7 +190,7 @@ HotReloadEngine <- R6::R6Class("HotReloadEngine",
 
 
           # Check if we captured ui/server via app() spy
-          if (exists("captured_ui", envir = temp_env) && exists("captured_server", envir = temp_env)) {
+          if (exists("captured_ui", envir = temp_env, inherits = FALSE) && exists("captured_server", envir = temp_env, inherits = FALSE)) {
             log_debug("[HotReload] Confirming hot reload: found updated app() definition")
             log_debug("[HotReload] Found captured_ui and captured_server\n", file = stderr())
             updated_ui <- get("captured_ui", envir = temp_env)
@@ -216,18 +216,18 @@ HotReloadEngine <- R6::R6Class("HotReloadEngine",
             # This handles cases where app() isn't called or names are standard
             log_debug("[HotReload] Checking for ui and server variables in temp_env\n", file = stderr())
             log_debug("[HotReload] Variables in temp_env:", paste(ls(envir = temp_env), collapse = ", "), "\n", file = stderr())
-            if (exists("server", envir = temp_env) && is.function(temp_env$server)) {
+            if (exists("server", envir = temp_env, inherits = FALSE) && is.function(temp_env$server)) {
               self$app$server_func <- temp_env$server
               log_debug("[HotReload] Updated server function from variable")
               log_debug("[HotReload] Updated server function from variable\n", file = stderr())
               log_debug("[HotReload] app$server_func is now function:", is.function(self$app$server_func), "\n", file = stderr())
             } else {
               log_debug("[HotReload] Server variable not found or not a function\n", file = stderr())
-              if (exists("server", envir = temp_env)) {
+              if (exists("server", envir = temp_env, inherits = FALSE)) {
                 log_debug("[HotReload] Server exists but is not a function, type:", class(temp_env$server), "\n", file = stderr())
               }
             }
-            if (exists("ui", envir = temp_env)) { # ui can be function or tag
+            if (exists("ui", envir = temp_env, inherits = FALSE)) { # ui can be function or tag
               updated_ui <- temp_env$ui
               # Check if UI changed
               if (!identical(old_ui, updated_ui)) {
