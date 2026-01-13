@@ -192,7 +192,7 @@ GraphBuilder <- R6::R6Class("GraphBuilder",
     # Build graph from server function
     build_from_server = function(server_func, source_info = NULL) {
       # Capture the server function's body
-      body_expr <- body(server_func)
+      body_expr <- base::body(server_func)
 
       # Create a new environment to track reactive declarations
       tracking_env <- new.env(parent = environment(server_func))

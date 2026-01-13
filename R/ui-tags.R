@@ -375,131 +375,599 @@ is.singleton <- function(x) {
 # Direct Tag Functions (convenience shortcuts)
 # ============================================================================
 
-#' Create a div element
+#' Create a a tag
 #' @param ... Tag contents and attributes
-#' @return A div tag
-#' @export
-div <- tags$div
-
-#' Create a span element
-#' @param ... Tag contents and attributes
-#' @return A span tag
-#' @export
-span <- tags$span
-
-#' Create a paragraph element
-#' @param ... Tag contents and attributes
-#' @return A p tag
-#' @export
-p <- tags$p
-
-#' Create an h1 heading
-#' @param ... Tag contents and attributes
-#' @return An h1 tag
-#' @export
-h1 <- tags$h1
-
-#' Create an h2 heading
-#' @param ... Tag contents and attributes
-#' @return An h2 tag
-#' @export
-h2 <- tags$h2
-
-#' Create an h3 heading
-#' @param ... Tag contents and attributes
-#' @return An h3 tag
-#' @export
-h3 <- tags$h3
-
-#' Create an h4 heading
-#' @param ... Tag contents and attributes
-#' @return An h4 tag
-#' @export
-h4 <- tags$h4
-
-#' Create an h5 heading
-#' @param ... Tag contents and attributes
-#' @return An h5 tag
-#' @export
-h5 <- tags$h5
-
-#' Create an h6 heading
-#' @param ... Tag contents and attributes
-#' @return An h6 tag
-#' @export
-h6 <- tags$h6
-
-#' Create an anchor (link) element
-#' @param ... Tag contents and attributes
-#' @return An a tag
+#' @return A a tag
 #' @export
 a <- tags$a
 
-#' Create a line break
-#' @param ... Tag attributes
-#' @return A br tag
-#' @export
-br <- tags$br
-
-#' Create a horizontal rule
-#' @param ... Tag attributes
-#' @return An hr tag
-#' @export
-hr <- tags$hr
-
-#' Create a preformatted text element
+#' Create a abbr tag
 #' @param ... Tag contents and attributes
-#' @return A pre tag
+#' @return A abbr tag
 #' @export
-pre <- tags$pre
+abbr <- tags$abbr
 
-#' Create a code element
+#' Create a address tag
 #' @param ... Tag contents and attributes
-#' @return A code tag
+#' @return A address tag
 #' @export
-code <- tags$code
+address <- tags$address
 
-#' Create an image element
-#' @param ... Tag attributes (src, alt, etc.)
-#' @return An img tag
-#' @export
-img <- tags$img
-
-#' Create a strong (bold) element
+#' Create a area tag
 #' @param ... Tag contents and attributes
-#' @return A strong tag
+#' @return A area tag
 #' @export
-strong <- tags$strong
+area <- tags$area
 
-#' Create an emphasis (italic) element
+#' Create a article tag
 #' @param ... Tag contents and attributes
-#' @return An em tag
+#' @return A article tag
 #' @export
-em <- tags$em
+article <- tags$article
 
-#' Create a blockquote element
+#' Create a aside tag
+#' @param ... Tag contents and attributes
+#' @return A aside tag
+#' @export
+aside <- tags$aside
+
+#' Create a audio tag
+#' @param ... Tag contents and attributes
+#' @return A audio tag
+#' @export
+audio <- tags$audio
+
+#' Create a b tag
+#' @param ... Tag contents and attributes
+#' @return A b tag
+#' @export
+b <- tags$b
+
+#' Create a base tag
+#' @param ... Tag contents and attributes
+#' @return A base tag
+#' @export
+base <- tags$base
+
+#' Create a bdi tag
+#' @param ... Tag contents and attributes
+#' @return A bdi tag
+#' @export
+bdi <- tags$bdi
+
+#' Create a bdo tag
+#' @param ... Tag contents and attributes
+#' @return A bdo tag
+#' @export
+bdo <- tags$bdo
+
+#' Create a blockquote tag
 #' @param ... Tag contents and attributes
 #' @return A blockquote tag
 #' @export
 blockquote <- tags$blockquote
 
-#' Create an unordered list
-#' @param ... Tag contents and attributes (li elements)
-#' @return A ul tag
+#' Create a br tag
+#' @param ... Tag contents and attributes
+#' @return A br tag
 #' @export
-ul <- tags$ul
+br <- tags$br
 
-#' Create an ordered list
-#' @param ... Tag contents and attributes (li elements)
-#' @return An ol tag
+#' Create a button tag
+#' @param ... Tag contents and attributes
+#' @return A button tag
 #' @export
-ol <- tags$ol
+button <- tags$button
 
-#' Create a list item
+#' Create a canvas tag
+#' @param ... Tag contents and attributes
+#' @return A canvas tag
+#' @export
+canvas <- tags$canvas
+
+#' Create a caption tag
+#' @param ... Tag contents and attributes
+#' @return A caption tag
+#' @export
+caption <- tags$caption
+
+#' Create a cite tag
+#' @param ... Tag contents and attributes
+#' @return A cite tag
+#' @export
+cite <- tags$cite
+
+#' Create a code tag
+#' @param ... Tag contents and attributes
+#' @return A code tag
+#' @export
+code <- tags$code
+
+#' Create a col tag
+#' @param ... Tag contents and attributes
+#' @return A col tag
+#' @export
+col <- tags$col
+
+#' Create a colgroup tag
+#' @param ... Tag contents and attributes
+#' @return A colgroup tag
+#' @export
+colgroup <- tags$colgroup
+
+#' Create a command tag
+#' @param ... Tag contents and attributes
+#' @return A command tag
+#' @export
+command <- tags$command
+
+#' Create a datalist tag
+#' @param ... Tag contents and attributes
+#' @return A datalist tag
+#' @export
+datalist <- tags$datalist
+
+#' Create a dd tag
+#' @param ... Tag contents and attributes
+#' @return A dd tag
+#' @export
+dd <- tags$dd
+
+#' Create a del tag
+#' @param ... Tag contents and attributes
+#' @return A del tag
+#' @export
+del <- tags$del
+
+#' Create a details tag
+#' @param ... Tag contents and attributes
+#' @return A details tag
+#' @export
+details <- tags$details
+
+#' Create a dfn tag
+#' @param ... Tag contents and attributes
+#' @return A dfn tag
+#' @export
+dfn <- tags$dfn
+
+#' Create a div tag
+#' @param ... Tag contents and attributes
+#' @return A div tag
+#' @export
+div <- tags$div
+
+#' Create a dl tag
+#' @param ... Tag contents and attributes
+#' @return A dl tag
+#' @export
+dl <- tags$dl
+
+#' Create a dt tag
+#' @param ... Tag contents and attributes
+#' @return A dt tag
+#' @export
+dt <- tags$dt
+
+#' Create a em tag
+#' @param ... Tag contents and attributes
+#' @return A em tag
+#' @export
+em <- tags$em
+
+#' Create a embed tag
+#' @param ... Tag contents and attributes
+#' @return A embed tag
+#' @export
+embed <- tags$embed
+
+#' Create a eventsource tag
+#' @param ... Tag contents and attributes
+#' @return A eventsource tag
+#' @export
+eventsource <- tags$eventsource
+
+#' Create a fieldset tag
+#' @param ... Tag contents and attributes
+#' @return A fieldset tag
+#' @export
+fieldset <- tags$fieldset
+
+#' Create a figcaption tag
+#' @param ... Tag contents and attributes
+#' @return A figcaption tag
+#' @export
+figcaption <- tags$figcaption
+
+#' Create a figure tag
+#' @param ... Tag contents and attributes
+#' @return A figure tag
+#' @export
+figure <- tags$figure
+
+#' Create a footer tag
+#' @param ... Tag contents and attributes
+#' @return A footer tag
+#' @export
+footer <- tags$footer
+
+#' Create a form tag
+#' @param ... Tag contents and attributes
+#' @return A form tag
+#' @export
+form <- tags$form
+
+#' Create a h1 tag
+#' @param ... Tag contents and attributes
+#' @return A h1 tag
+#' @export
+h1 <- tags$h1
+
+#' Create a h2 tag
+#' @param ... Tag contents and attributes
+#' @return A h2 tag
+#' @export
+h2 <- tags$h2
+
+#' Create a h3 tag
+#' @param ... Tag contents and attributes
+#' @return A h3 tag
+#' @export
+h3 <- tags$h3
+
+#' Create a h4 tag
+#' @param ... Tag contents and attributes
+#' @return A h4 tag
+#' @export
+h4 <- tags$h4
+
+#' Create a h5 tag
+#' @param ... Tag contents and attributes
+#' @return A h5 tag
+#' @export
+h5 <- tags$h5
+
+#' Create a h6 tag
+#' @param ... Tag contents and attributes
+#' @return A h6 tag
+#' @export
+h6 <- tags$h6
+
+#' Create a header tag
+#' @param ... Tag contents and attributes
+#' @return A header tag
+#' @export
+header <- tags$header
+
+#' Create a hgroup tag
+#' @param ... Tag contents and attributes
+#' @return A hgroup tag
+#' @export
+hgroup <- tags$hgroup
+
+#' Create a hr tag
+#' @param ... Tag contents and attributes
+#' @return A hr tag
+#' @export
+hr <- tags$hr
+
+#' Create a html tag
+#' @param ... Tag contents and attributes
+#' @return A html tag
+#' @export
+html <- tags$html
+
+#' Create a i tag
+#' @param ... Tag contents and attributes
+#' @return A i tag
+#' @export
+i <- tags$i
+
+#' Create a iframe tag
+#' @param ... Tag contents and attributes
+#' @return A iframe tag
+#' @export
+iframe <- tags$iframe
+
+#' Create a img tag
+#' @param ... Tag contents and attributes
+#' @return A img tag
+#' @export
+img <- tags$img
+
+#' Create a input tag
+#' @param ... Tag contents and attributes
+#' @return A input tag
+#' @export
+input <- tags$input
+
+#' Create a ins tag
+#' @param ... Tag contents and attributes
+#' @return A ins tag
+#' @export
+ins <- tags$ins
+
+#' Create a kbd tag
+#' @param ... Tag contents and attributes
+#' @return A kbd tag
+#' @export
+kbd <- tags$kbd
+
+#' Create a keygen tag
+#' @param ... Tag contents and attributes
+#' @return A keygen tag
+#' @export
+keygen <- tags$keygen
+
+#' Create a label tag
+#' @param ... Tag contents and attributes
+#' @return A label tag
+#' @export
+label <- tags$label
+
+#' Create a li tag
 #' @param ... Tag contents and attributes
 #' @return A li tag
 #' @export
 li <- tags$li
+
+#' Create a link tag
+#' @param ... Tag contents and attributes
+#' @return A link tag
+#' @export
+link <- tags$link
+
+#' Create a mark tag
+#' @param ... Tag contents and attributes
+#' @return A mark tag
+#' @export
+mark <- tags$mark
+
+#' Create a map tag
+#' @param ... Tag contents and attributes
+#' @return A map tag
+#' @export
+map <- tags$map
+
+#' Create a menu tag
+#' @param ... Tag contents and attributes
+#' @return A menu tag
+#' @export
+menu <- tags$menu
+
+#' Create a meta tag
+#' @param ... Tag contents and attributes
+#' @return A meta tag
+#' @export
+meta <- tags$meta
+
+#' Create a meter tag
+#' @param ... Tag contents and attributes
+#' @return A meter tag
+#' @export
+meter <- tags$meter
+
+#' Create a nav tag
+#' @param ... Tag contents and attributes
+#' @return A nav tag
+#' @export
+nav <- tags$nav
+
+#' Create a noscript tag
+#' @param ... Tag contents and attributes
+#' @return A noscript tag
+#' @export
+noscript <- tags$noscript
+
+#' Create a object tag
+#' @param ... Tag contents and attributes
+#' @return A object tag
+#' @export
+object <- tags$object
+
+#' Create a ol tag
+#' @param ... Tag contents and attributes
+#' @return A ol tag
+#' @export
+ol <- tags$ol
+
+#' Create a optgroup tag
+#' @param ... Tag contents and attributes
+#' @return A optgroup tag
+#' @export
+optgroup <- tags$optgroup
+
+#' Create a option tag
+#' @param ... Tag contents and attributes
+#' @return A option tag
+#' @export
+option <- tags$option
+
+#' Create a output tag
+#' @param ... Tag contents and attributes
+#' @return A output tag
+#' @export
+output <- tags$output
+
+#' Create a p tag
+#' @param ... Tag contents and attributes
+#' @return A p tag
+#' @export
+p <- tags$p
+
+#' Create a param tag
+#' @param ... Tag contents and attributes
+#' @return A param tag
+#' @export
+param <- tags$param
+
+#' Create a pre tag
+#' @param ... Tag contents and attributes
+#' @return A pre tag
+#' @export
+pre <- tags$pre
+
+#' Create a progress tag
+#' @param ... Tag contents and attributes
+#' @return A progress tag
+#' @export
+progress <- tags$progress
+
+#' Create a ruby tag
+#' @param ... Tag contents and attributes
+#' @return A ruby tag
+#' @export
+ruby <- tags$ruby
+
+#' Create a rp tag
+#' @param ... Tag contents and attributes
+#' @return A rp tag
+#' @export
+rp <- tags$rp
+
+#' Create a rt tag
+#' @param ... Tag contents and attributes
+#' @return A rt tag
+#' @export
+rt <- tags$rt
+
+#' Create a s tag
+#' @param ... Tag contents and attributes
+#' @return A s tag
+#' @export
+s <- tags$s
+
+#' Create a samp tag
+#' @param ... Tag contents and attributes
+#' @return A samp tag
+#' @export
+samp <- tags$samp
+
+#' Create a script tag
+#' @param ... Tag contents and attributes
+#' @return A script tag
+#' @export
+script <- tags$script
+
+#' Create a section tag
+#' @param ... Tag contents and attributes
+#' @return A section tag
+#' @export
+section <- tags$section
+
+#' Create a select tag
+#' @param ... Tag contents and attributes
+#' @return A select tag
+#' @export
+select <- tags$select
+
+#' Create a small tag
+#' @param ... Tag contents and attributes
+#' @return A small tag
+#' @export
+small <- tags$small
+
+#' Create a span tag
+#' @param ... Tag contents and attributes
+#' @return A span tag
+#' @export
+span <- tags$span
+
+#' Create a strong tag
+#' @param ... Tag contents and attributes
+#' @return A strong tag
+#' @export
+strong <- tags$strong
+
+#' Create a style tag
+#' @param ... Tag contents and attributes
+#' @return A style tag
+#' @export
+style <- tags$style
+
+#' Create a sup tag
+#' @param ... Tag contents and attributes
+#' @return A sup tag
+#' @export
+sup <- tags$sup
+
+#' Create a tbody tag
+#' @param ... Tag contents and attributes
+#' @return A tbody tag
+#' @export
+tbody <- tags$tbody
+
+#' Create a td tag
+#' @param ... Tag contents and attributes
+#' @return A td tag
+#' @export
+td <- tags$td
+
+#' Create a textarea tag
+#' @param ... Tag contents and attributes
+#' @return A textarea tag
+#' @export
+textarea <- tags$textarea
+
+#' Create a tfoot tag
+#' @param ... Tag contents and attributes
+#' @return A tfoot tag
+#' @export
+tfoot <- tags$tfoot
+
+#' Create a th tag
+#' @param ... Tag contents and attributes
+#' @return A th tag
+#' @export
+th <- tags$th
+
+#' Create a thead tag
+#' @param ... Tag contents and attributes
+#' @return A thead tag
+#' @export
+thead <- tags$thead
+
+#' Create a time tag
+#' @param ... Tag contents and attributes
+#' @return A time tag
+#' @export
+time <- tags$time
+
+#' Create a tr tag
+#' @param ... Tag contents and attributes
+#' @return A tr tag
+#' @export
+tr <- tags$tr
+
+#' Create a track tag
+#' @param ... Tag contents and attributes
+#' @return A track tag
+#' @export
+track <- tags$track
+
+#' Create a u tag
+#' @param ... Tag contents and attributes
+#' @return A u tag
+#' @export
+u <- tags$u
+
+#' Create a ul tag
+#' @param ... Tag contents and attributes
+#' @return A ul tag
+#' @export
+ul <- tags$ul
+
+#' Create a video tag
+#' @param ... Tag contents and attributes
+#' @return A video tag
+#' @export
+video <- tags$video
+
+#' Create a wbr tag
+#' @param ... Tag contents and attributes
+#' @return A wbr tag
+#' @export
+wbr <- tags$wbr
 
 # ============================================================================
 # Include Functions

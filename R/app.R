@@ -1002,18 +1002,7 @@ HotShinyApp <- R6::R6Class("HotShinyApp",
       }
       
       # Also try namespace functions
-      ui_funcs <- c("tag", "tags", "tagList", "div", "span", "p", "h1", "h2", "h3", 
-                    "h4", "h5", "h6", "a", "br", "hr", "pre", "code", "img", "strong", 
-                    "em", "ul", "ol", "li", "HTML", "textInput", "numericInput", 
-                    "textOutput", "plotOutput", "textAreaInput", "passwordInput",
-                    "selectInput", "checkboxInput", "checkboxGroupInput", "radioButtons",
-                    "sliderInput", "dateInput", "dateRangeInput", "actionButton",
-                    "actionLink", "fileInput", "fluidPage", "fluidRow", "fixedPage",
-                    "sidebarLayout", "sidebarPanel", "mainPanel", "wellPanel",
-                    "tabsetPanel", "tabPanel", "navbarPage", "column", "verbatimTextOutput",
-                    "htmlOutput", "uiOutput", "imageOutput", "tableOutput", "dataTableOutput",
-                    "downloadButton", "downloadLink", "icon", "helpText", "titlePanel",
-                    "conditionalPanel", "fillPage", "fillRow", "fillCol")
+      ui_funcs <- c("tag", "tags", "tagList", "a", "abbr", "address", "area", "article", "aside", "audio", "b", "base", "bdi", "bdo", "blockquote", "br", "button", "canvas", "caption", "cite", "code", "col", "colgroup", "command", "datalist", "dd", "del", "details", "dfn", "div", "dl", "dt", "em", "embed", "eventsource", "fieldset", "figcaption", "figure", "footer", "form", "h1", "h2", "h3", "h4", "h5", "h6", "header", "hgroup", "hr", "html", "i", "iframe", "img", "input", "ins", "kbd", "keygen", "label", "li", "link", "mark", "map", "menu", "meta", "meter", "nav", "noscript", "object", "ol", "optgroup", "option", "output", "p", "param", "pre", "progress", "ruby", "rp", "rt", "s", "samp", "script", "section", "select", "small", "span", "strong", "style", "sup", "tbody", "td", "textarea", "tfoot", "th", "thead", "time", "tr", "track", "u", "ul", "video", "wbr", "HTML", "textInput", "numericInput", "textOutput", "plotOutput", "textAreaInput", "passwordInput", "selectInput", "checkboxInput", "checkboxGroupInput", "radioButtons", "sliderInput", "dateInput", "dateRangeInput", "actionButton", "actionLink", "fileInput", "fluidPage", "fluidRow", "fixedPage", "sidebarLayout", "sidebarPanel", "mainPanel", "wellPanel", "tabsetPanel", "tabPanel", "navbarPage", "column", "verbatimTextOutput", "htmlOutput", "uiOutput", "imageOutput", "tableOutput", "dataTableOutput", "downloadButton", "downloadLink", "icon", "helpText", "titlePanel", "conditionalPanel", "fillPage", "fillRow", "fillCol")
       
       for (fn in ui_funcs) {
         if (!exists(fn, envir = ui_env, inherits = FALSE)) {
@@ -1135,7 +1124,7 @@ HotShinyApp <- R6::R6Class("HotShinyApp",
 
           # Self-closing (void) tags
           void_elements <- c("area", "base", "br", "col", "embed", "hr", "img", "input",
-                            "link", "meta", "param", "source", "track", "wbr")
+                            "link", "meta", "param", "track", "wbr")
           
           if (tag_name %in% void_elements) {
             return(paste0("<", tag_name, attr_str, " />"))

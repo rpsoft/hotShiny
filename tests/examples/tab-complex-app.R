@@ -8,6 +8,12 @@ ui <- function() {
       sidebarLayout(
         sidebarPanel = sidebarPanel(
           h1("Hot Reload - Values Preserved!"),
+          h2("This is a subtitle"),
+          h3("this is a 3 title"),
+          h4("this is a 4 title"),
+          h5("this is a 5 title"),
+          h6("this is a 6 title"),
+          p("this is a paragraph"),
           numericInput("a", "Value A:", value = 10),
           numericInput("b", "Value B:", value = 20),
           sliderInput("sliding", "This is a slider", 1, 10, 5),
@@ -21,7 +27,8 @@ ui <- function() {
           plotOutput("plot"),
           textOutput("isTrue"),
           textOutput("isFalse"),
-          textOutput("radioOuts")
+          textOutput("radioOuts"),
+          uiOutput("iframe")
         ),
         position = c("left", "right"),
         fluid = TRUE
@@ -29,7 +36,8 @@ ui <- function() {
       div(
         "hello",
         style = "background-color:yellow; height: 50px;",
-        div("bye", style="background-color:blue; width:fit-content; padding:20px;")
+        div("bye", style="background-color:blue; width:fit-content; padding:20px;"),
+        span("hello there", style="background-color:red; width:fit-content; padding:20px;")
       )
     )
 }
@@ -68,11 +76,15 @@ server <- function(input, output, session) {
   
   output$plot <- renderPlot({
     # Simple plot
-    plot(1:input$sliding, main = combined())
+    plot(1:input$sliding, main = "hello there")
   })
   
   output$radioOuts <- renderText({
     input$radios
+  })
+
+  output$iframe <- renderUI({
+    iframe( src= "http://wikipedia.org", width = "100%", height = "500px" )
   })
   
   # Observer
