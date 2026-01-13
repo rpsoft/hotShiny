@@ -11,6 +11,7 @@ HotReloadEngine <- R6::R6Class("HotReloadEngine",
     version_manager = NULL,
     preservation_manager = NULL,
     enabled = NULL,
+    last_ui_html = NULL,
     initialize = function(app) {
       self$app <- app
       # Get classes - load them if needed
@@ -186,6 +187,8 @@ HotReloadEngine <- R6::R6Class("HotReloadEngine",
           temp_vars <- ls(envir = temp_env, all.names = TRUE)
           log_debug("[HotReload] Variables in temp_env after sourcing:", paste(temp_vars, collapse = ", "), "\n", file = stderr())
 
+
+
           # Check if we captured ui/server via app() spy
           if (exists("captured_ui", envir = temp_env) && exists("captured_server", envir = temp_env)) {
             log_debug("[HotReload] Confirming hot reload: found updated app() definition")
@@ -197,8 +200,6 @@ HotReloadEngine <- R6::R6Class("HotReloadEngine",
             log_debug("[HotReload] updated_ui type:", class(updated_ui), "\n", file = stderr())
 
             # Check if UI changed
-            # For functions, we compare the objects (new function = changed)
-            # For other types, we use identical() comparison
             if (!identical(old_ui, updated_ui)) {
               ui_changed <- TRUE
               log_debug("[HotReload] UI changed, will regenerate HTML\n", file = stderr())
@@ -262,11 +263,19 @@ HotReloadEngine <- R6::R6Class("HotReloadEngine",
       # If UI changed, regenerate and send updated HTML
       if (ui_changed && !is.null(self$app$ws_server)) {
         tryCatch({
-          log_debug("[HotReload] UI changed, regenerating HTML\n", file = stderr())
+          log_debug("[HotReload] UI possibly changed, regenerating HTML to verify\n", file = stderr())
           new_ui_html <- self$app$render_app_html()
           log_debug("[HotReload] Generated new UI HTML, length:", nchar(new_ui_html), "\n", file = stderr())
-          self$app$ws_server$send_ui_replace(new_ui_html)
-          log_debug("[HotReload] Sent UI replacement to clients\n", file = stderr())
+
+          # Optimization: Only send if HTML actually changed
+          if (is.null(self$last_ui_html) || !identical(new_ui_html, self$last_ui_html)) {
+            log_debug("[HotReload] HTML content changed, sending update\n", file = stderr())
+            self$last_ui_html <- new_ui_html
+            self$app$ws_server$send_ui_replace(new_ui_html)
+            log_debug("[HotReload] Sent UI replacement to clients\n", file = stderr())
+          } else {
+            log_debug("[HotReload] HTML content identical, skipping update\n", file = stderr())
+          }
         }, error = function(e) {
           warning("[HotReload] Failed to regenerate/send UI: ", conditionMessage(e))
           log_debug("[HotReload] ERROR regenerating UI: ", conditionMessage(e), "\n", file = stderr())

@@ -666,7 +666,10 @@
           const initialValue = binding.getValue(el);
           if (initialValue !== null && initialValue !== undefined && initialValue !== '') {
             setTimeout(() => {
-              this.sendValue(id, initialValue);
+              // Re-read value to ensure we don't overwrite restored state
+              // which might have happened during the timeout
+              const currentValue = binding.getValue(el);
+              this.sendValue(id, currentValue);
             }, 100);
           }
         }

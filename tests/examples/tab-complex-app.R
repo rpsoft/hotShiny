@@ -7,9 +7,9 @@ ui <- function() {
   hotShiny::div(
       sidebarLayout(
         sidebarPanel = sidebarPanel(
-          h1("Hot Reload - Values Preservedd!"),
-          numericInput("a", "Value A:", value = 2),
-          numericInput("b", "Value B:", value = 7),
+          h1("Hot Reload - Values Preserved!"),
+          numericInput("a", "Value A:", value = 10),
+          numericInput("b", "Value B:", value = 20),
           sliderInput("sliding", "This is a slider", 1, 10, 5),
           checkboxInput("checkit", "hello"),
           radioButtons("radios", "choices here", c("bread", "cheese", "beer"))
@@ -37,7 +37,7 @@ ui <- function() {
 server <- function(input, output, session) {
   # Multiple reactive expressions
   sum_value <- reactive({
-    input$a + input$b + 40
+    input$a + input$b + 10
   })
   
   product_value <- reactive({

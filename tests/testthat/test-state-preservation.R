@@ -145,3 +145,5 @@ test_that("HotReloadEngine handles UI changes and state preservation", {
   expect_equal(msgs[[1]]$type, "restore_inputs")
   expect_equal(msgs[[1]]$inputs$test, 123)
 })
+
+
