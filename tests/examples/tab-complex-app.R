@@ -17,7 +17,7 @@ ui <- function() {
           numericInput("a", "Value A:", value = 10),
           numericInput("b", "Value B:", value = 20),
           sliderInput("sliding", "This is a slider", 1, 10, 5),
-          checkboxInput("checkit", "hello"),
+          checkboxInput("checkit", "hello", value = FALSE),
           radioButtons("radios", "choices here", c("bread", "cheese", "beer"))
         ),
         mainPanel(
@@ -28,7 +28,8 @@ ui <- function() {
           textOutput("isTrue"),
           textOutput("isFalse"),
           textOutput("radioOuts"),
-          uiOutput("iframe")
+          uiOutput("iframe"),
+          uiOutput("htmlthing")
         ),
         position = c("left", "right"),
         fluid = TRUE
@@ -84,7 +85,20 @@ server <- function(input, output, session) {
   })
 
   output$iframe <- renderUI({
-    iframe( src= "http://wikipedia.org", width = "100%", height = "500px" )
+    if (input$checkit) {
+      iframe( src= "http://wikipedia.org", width = "100%", height = "500px" )
+    } else {
+      NULL
+    }
+  })
+
+  output$htmlthing <- renderUI({
+    div(
+      span("hello there", style="background-color:red; width:fit-content; padding:20px;"),  
+      span("hello there", style="background-color:blue; width:fit-content; padding:20px;"),  
+      span("hello there", style="background-color:green; width:fit-content; padding:20px;"),  
+      style = "background-color:yellow; height: 50px;"
+    )
   })
   
   # Observer
@@ -92,41 +106,3 @@ server <- function(input, output, session) {
     message("Sum changed to:", sum_value())
   })
 }
-
-# Create app
-# app_obj <- app(ui, server)
-
-# # Enable features
-# #enable_hot_reload(app_obj)
-# # enable_strict_mode(app_obj)
-# # enable_time_travel(app_obj)
-
-
-# # Enable hot reload (in development)
-# # Watch the current file and its directory
-# # Get the path to this file
-# app_file <- tryCatch({
-#   # Try to get from sys.source context
-#   frames <- sys.frames()
-#   for (frame in frames) {
-#     if (exists("ofile", envir = frame, inherits = FALSE)) {
-#       file <- get("ofile", envir = frame, inherits = FALSE)
-#       if (!is.null(file) && file.exists(file)) {
-#         return(normalizePath(file))
-#       }
-#     }
-#   }
-#   # Fallback: use relative path
-#   normalizePath("tests/examples/tab-complex-app.R", mustWork = TRUE)
-# }, error = function(e) {
-#   # Final fallback
-#   file.path(getwd(), "tests/examples/tab-complex-app.R")
-# })
-
-# app_dir <- dirname(app_file)
-# enable_hot_reload(app_obj, watch_paths = c(app_file, app_dir))
-
-# # Run app
-# # The server will start and be accessible at http://localhost:3838
-# # Press ESC or Ctrl+C to stop the server
-# # app_obj$runApp(port = 3838)

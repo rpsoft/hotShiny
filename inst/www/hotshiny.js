@@ -97,10 +97,26 @@
         }
         input.setAttribute('data-hotshiny-listener', 'true');
 
+        // Helper to get correct value based on input type
+        const getInputValue = (el) => {
+          if (el.type === 'checkbox') {
+            return el.checked;
+          }
+          return el.value;
+        };
+
         // Send initial value ONLY on first page load (not after hot reload)
-        // Check if this is the initial page load by looking for a flag
-        const initialValue = input.value || '';
-        if (initialValue !== '' && !this.initialValuesSent) {
+        const initialValue = getInputValue(input);
+
+        // Determine if we should send this value
+        // For checkboxes, false is a valid value we want to send
+        // For text inputs, empty string is valid but original code skipped it? 
+        // Original: initialValue !== ''
+        // Improved: Allow boolean false, allow empty string if it's not undefined
+        const isValid = initialValue !== undefined && initialValue !== null;
+        const isNotEmpty = initialValue !== '';
+
+        if (isValid && (isNotEmpty || input.type === 'checkbox') && !this.initialValuesSent) {
           logDebug(` Sending initial value for ${inputId}: ${initialValue}`);
           // Use a small delay to ensure WebSocket is connected
           setTimeout(() => {
@@ -109,26 +125,26 @@
         }
 
         // Track the last sent value to avoid redundant sends
-        input.setAttribute('data-hotshiny-last-value', initialValue);
+        input.setAttribute('data-hotshiny-last-value', String(initialValue));
 
         // Attach input event (fires on every keystroke)
         input.addEventListener('input', (e) => {
-          const value = e.target.value || '';
-          const lastValue = input.getAttribute('data-hotshiny-last-value') || '';
+          const value = getInputValue(e.target);
+          const lastValue = input.getAttribute('data-hotshiny-last-value');
           // Only send if value actually changed
-          if (value !== lastValue) {
-            input.setAttribute('data-hotshiny-last-value', value);
+          if (String(value) !== lastValue) {
+            input.setAttribute('data-hotshiny-last-value', String(value));
             this.sendInput(inputId, value);
           }
         });
 
         // Also attach change event (fires on blur/enter)
         input.addEventListener('change', (e) => {
-          const value = e.target.value || '';
-          const lastValue = input.getAttribute('data-hotshiny-last-value') || '';
+          const value = getInputValue(e.target);
+          const lastValue = input.getAttribute('data-hotshiny-last-value');
           // Only send if value actually changed
-          if (value !== lastValue) {
-            input.setAttribute('data-hotshiny-last-value', value);
+          if (String(value) !== lastValue) {
+            input.setAttribute('data-hotshiny-last-value', String(value));
             this.sendInput(inputId, value);
           }
         });
