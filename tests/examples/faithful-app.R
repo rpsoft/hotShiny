@@ -4,41 +4,38 @@
 library(hotShiny)
 
 ui <- fluidPage(
-    # App title ----
-    titlePanel("Hello Shiny!"),
+ 
+    # Application title
+    titlePanel("Old Faithful Geyser Data"),
 
-    # Sidebar layout with input and output definitions ----
+    # Sidebar with a slider input for number of bins 
     sidebarLayout(
+        sidebarPanel(
+            sliderInput("bins",
+                        "Number of bins:",
+                        min = 1,
+                        max = 50,
+                        value = 30)
+        ),
 
-      # Sidebar panel for inputs ----
-      sidebarPanel(
-
-        # Input: Slider for the number of bins ----
-        sliderInput(inputId = "bins",
-                    label = "Number of bins:",
-                    min = 1,
-                    max = 50,
-                    value = 30)
-
-      ),
-
-      # Main panel for displaying outputs ----
-      mainPanel(
-
-        # Output: Histogram ----
-        plotOutput(outputId = "distPlot")
-
-      )
+        # Show a plot of the generated distribution
+        mainPanel(
+           plotOutput("distPlot")
+        )
     )
 )
 
 server <- function(input, output, session) {
-  output$distPlot <- renderPlot({
-    # generate bins based on input$bins from the slider
-    x    <- faithful$eruptions
-    bins <- seq(min(x), max(x), length.out = input$bins + 1)
+  
+    output$distPlot <- renderPlot({
+        # generate bins based on input$bins from ui.R
+        x    <- faithful[, 2]
+        bins <- seq(min(x), max(x), length.out = input$bins+1)
 
-    # draw the histogram with the specified number of bins
-    hist(x, breaks = bins, col = 'darkgray', border = 'white')
-  })
+        # draw the histogram with the specified number of bins
+        hist(x, breaks = bins, col = 'darkgray', border = 'white',
+             xlab = 'Waiting time to next eruption (in mins)',
+             ylab = 'Frequency',
+             main = paste("Histogram of waiting times"))
+    })
 }

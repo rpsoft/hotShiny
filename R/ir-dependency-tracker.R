@@ -12,7 +12,7 @@ extract_dependencies <- function(expr, env = parent.frame()) {
   
   # Recursively walk the AST
   walk_ast <- function(x) {
-    if (is.null(x) || length(x) == 0) {
+    if (rlang::is_missing(x) || is.null(x) || length(x) == 0) {
       return(NULL)
     }
     
@@ -24,9 +24,8 @@ extract_dependencies <- function(expr, env = parent.frame()) {
       # Special handling for { } blocks - process all statements inside
       if (fn == "{") {
         # Process all arguments (statements) in the block
-        for (arg in args) {
-          walk_ast(arg)
-        }
+        lapply(args, walk_ast)
+        return(NULL)
         return(NULL)
       }
       
@@ -117,9 +116,7 @@ extract_dependencies <- function(expr, env = parent.frame()) {
       }
       
       # Recursively process arguments
-      for (arg in args) {
-        walk_ast(arg)
-      }
+      lapply(args, walk_ast)
     } else if (rlang::is_symbol(x)) {
       # Check if symbol refers to a reactive value
       sym_name <- rlang::as_string(x)
