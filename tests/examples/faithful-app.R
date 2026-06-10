@@ -20,7 +20,8 @@ ui <- fluidPage(
 
         # Show a plot of the generated distribution
         mainPanel(
-           plotOutput("distPlot")
+           plotOutput("distPlot"),
+           textOutput("textUnder")
         )
     )
 )
@@ -37,6 +38,10 @@ server <- function(input, output, session) {
              xlab = 'Waiting time to next eruption (in mins)',
              ylab = 'Frequency',
              main = paste("Histogram of waiting times"))
+    })
+
+    output$textUnder <- renderText({
+      "hello here! alala alsisisi"
     })
 }
 

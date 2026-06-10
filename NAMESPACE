@@ -244,6 +244,80 @@ export(createRenderFunction)
 export(sizeGrowthRatio)
 
 # ============================================================================
+# Shiny Compatibility - Reactive extras (R/compat-reactive.R)
+# ============================================================================
+export(isolate)
+export(req)
+export(reqStop)
+export(isTruthy)
+export(validate)
+export(need)
+export(safeError)
+export(is.reactive)
+export(reactiveValuesToList)
+export(freezeReactiveValue)
+export(reactiveVal)
+export(eventReactive)
+export(bindEvent)
+export(invalidateLater)
+export(reactiveTimer)
+export(debounce)
+export(throttle)
+
+# ============================================================================
+# Shiny Compatibility - App entry points (R/compat-app.R)
+# ============================================================================
+export(shinyApp)
+export(shinyAppDir)
+export(shinyServer)
+export(shinyUI)
+export(stopApp)
+export(addResourcePath)
+export(removeResourcePath)
+export(registerInputHandler)
+export(removeInputHandler)
+
+# ============================================================================
+# Shiny Compatibility - Modules (R/compat-modules.R)
+# ============================================================================
+export(NS)
+export(moduleServer)
+export(callModule)
+
+# ============================================================================
+# Shiny Compatibility - Utilities and unsupported stubs (R/compat-stubs.R)
+# ============================================================================
+export(shinyOptions)
+export(getShinyOption)
+export(parseQueryString)
+export(onStop)
+export(enableBookmarking)
+export(setBookmarkExclude)
+export(bookmarkButton)
+export(onBookmark)
+export(onBookmarked)
+export(onRestore)
+export(onRestored)
+export(bindCache)
+export(ExtendedTask)
+export(reactivePoll)
+export(reactiveFileReader)
+export(exportTestValues)
+export(snapshotExclude)
+export(markRenderFunction)
+export(runExample)
+export(runGist)
+export(runGitHub)
+export(runUrl)
+
+# ============================================================================
+# shiny2hotshiny Translator (R/translator.R)
+# ============================================================================
+export(shiny2hotshiny_check)
+export(shiny2hotshiny_translate)
+S3method(print, shiny2hotshiny_report)
+
+# ============================================================================
 # Imports - Use importFrom to avoid conflicts
 # ============================================================================
 # R6 - for classes

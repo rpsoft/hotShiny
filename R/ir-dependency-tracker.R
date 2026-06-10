@@ -26,9 +26,29 @@ extract_dependencies <- function(expr, env = parent.frame()) {
         # Process all arguments (statements) in the block
         lapply(args, walk_ast)
         return(NULL)
+      }
+
+      # isolate(...) deliberately suppresses dependency tracking: do not
+      # descend into its argument (mirrors Shiny's isolate()).
+      if (!is.null(fn) && fn == "isolate") {
         return(NULL)
       }
-      
+
+      # Check for input[["x"]] pattern (literal string subscript).
+      if (!is.null(fn) && fn == "[[" && length(args) >= 2) {
+        obj <- args[[1]]
+        if (rlang::is_symbol(obj) && rlang::as_string(obj) == "input") {
+          key <- tryCatch(args[[2]], error = function(e) NULL)
+          if (is.character(key) && length(key) == 1) {
+            dep_id <- paste0("input.", key)
+            if (!exists(dep_id, envir = visited)) {
+              assign(dep_id, TRUE, envir = visited)
+              deps <<- c(deps, list(dep_id))
+            }
+          }
+        }
+      }
+
       # Check for input$x pattern
       if (fn == "$" && length(args) >= 2) {
         obj <- args[[1]]

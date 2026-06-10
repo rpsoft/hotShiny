@@ -51,11 +51,24 @@ ReactiveValues <- R6::R6Class("ReactiveValues",
       assign(name, value, envir = self$values)
 
       # Register as input node if not exists
-      node_id <- paste0("reactiveValues.", name)
       if (!exists(name, envir = self$node_ids)) {
         # Create input-like node for this value
         input_node <- self$builder$register_input(name, source = get_source_location())
         assign(name, input_node$id, envir = self$node_ids)
+      }
+
+      # If the app is already running, a write to a reactive value must
+      # propagate to outputs. hotShiny tracks dependencies statically and
+      # cannot always attribute reactiveValues reads to a precise edge, so we
+      # invalidate conservatively (re-run computed nodes). During initial graph
+      # construction the app is not yet running and we skip this.
+      executor <- tryCatch(get_executor(), error = function(e) NULL)
+      app_running <- !is.null(executor) && !is.null(executor$app) && isTRUE(executor$app$running)
+      if (app_running && exists(".hotshiny_invalidate_all", envir = asNamespace("hotShiny"))) {
+        tryCatch(
+          get(".hotshiny_invalidate_all", envir = asNamespace("hotShiny"))(),
+          error = function(e) NULL
+        )
       }
     },
 
@@ -106,6 +119,37 @@ ReactiveValues <- R6::R6Class("ReactiveValues",
   x
 }
 
+# Coerce a stored input value to its natural R type.
+#
+# Values reported by the browser arrive as strings. To match Shiny we convert
+# them back to their natural types: "TRUE"/"FALSE" -> logical, numeric-looking
+# strings -> numeric, and leave everything else as character. Values that are
+# already typed (set programmatically, or multi-element vectors such as a
+# checkboxGroupInput selection) are returned unchanged.
+coerce_input_value <- function(value) {
+  if (is.null(value)) return(NULL)
+
+  # Already a non-character type, or a multi-element vector: pass through.
+  if (!is.character(value)) return(value)
+  if (length(value) != 1) return(value)
+
+  value_str <- trimws(value)
+  if (value_str == "") return("")
+
+  # Logical
+  if (value_str %in% c("TRUE", "FALSE", "true", "false")) {
+    return(as.logical(toupper(value_str)))
+  }
+
+  # Numeric (but not strings like "1e3foo"); guard against NA from coercion.
+  num <- suppressWarnings(as.numeric(value_str))
+  if (!is.na(num) && grepl("^[-+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?$", value_str)) {
+    return(num)
+  }
+
+  value_str
+}
+
 # Input object (for input$x access)
 InputProxy <- R6::R6Class("InputProxy",
   public = list(
@@ -150,40 +194,28 @@ InputProxy <- R6::R6Class("InputProxy",
                 value <- state_manager$get_value(node_id)
                 # Check if value exists
                 if (!is.null(value)) {
-                  # Convert to character and trim whitespace
-                  value_str <- trimws(as.character(value))
-                  # Try to convert to numeric if the value looks numeric
-                  # This allows numericInput values to work in arithmetic operations
-                  if (value_str != "" && !is.na(suppressWarnings(as.numeric(value_str)))) {
-                    # Value is numeric - return as numeric
-                    return(as.numeric(value_str))
-                  }
-                  # Value is not numeric or is empty - return as string
-                  return(value_str)
+                  return(coerce_input_value(value))
                 }
-                # If value is NULL in state manager, it means it hasn't been set yet.
-                # Just return empty string. Do NOT call executor$get_value as that causes recursion.
+                # If value is NULL in state manager the input has not been set
+                # yet. Shiny semantics: input$x is NULL until the client reports
+                # a value. Returning NULL (rather than "") lets req()/is.null()
+                # work as written. Do NOT call executor$get_value (recursion).
               }
             }
           }
 
-          # Default: return empty string
-          return("")
+          # Default: input not available yet.
+          return(NULL)
         },
         error = function(e) {
           # Log error
           log_debug("[InputProxy] ERROR: ", conditionMessage(e), "\n", file = stderr())
-          # If there's any error, return empty string
-          return("")
+          # On any unexpected error, behave as if the input is unset.
+          return(NULL)
         }
       )
 
-      # Ensure we always return a value (string or numeric)
-      if (is.null(result) || (is.character(result) && length(result) == 0)) {
-        return("")
-      }
-
-      # Return result as-is (could be string or numeric)
+      # Return result as-is (could be NULL, string, numeric, logical or vector)
       result
     }
   )
@@ -219,11 +251,21 @@ OutputProxy <- function(builder) {
 `$<-.OutputProxy` <- function(x, name, value) {
   # When output$x <- renderText(...) is called, R evaluates renderText(...) first
   # So renderText returns a RenderProxy, then $<- is called with that proxy
-  # We can set the output name on the proxy here
-  if (inherits(value, "RenderProxy")) {
-    value$set_output_name(name)
+  # We can set the output name on the proxy here.
+  #
+  # For module output proxies an `ns_prefix` attribute is present, in which case
+  # the render node must be registered under the namespaced output id so the
+  # client targets the right DOM element.
+  prefix <- attr(x, "ns_prefix", exact = TRUE)
+  target_name <- if (!is.null(prefix) && nzchar(prefix)) {
+    paste(prefix, name, sep = "-")
+  } else {
+    name
   }
-  # Store in the environment
+  if (inherits(value, "RenderProxy")) {
+    value$set_output_name(target_name)
+  }
+  # Store in the environment (under the local name).
   assign(name, value, envir = x)
   x
 }

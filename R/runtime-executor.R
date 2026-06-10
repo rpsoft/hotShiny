@@ -12,6 +12,7 @@ ReactiveExecutor <- R6::R6Class("ReactiveExecutor",
     helper_functions = NULL,
     app = NULL,
     builder = NULL,
+    session = NULL,
 
     # Set app reference (called from HotShinyApp)
     set_app = function(app) {
@@ -423,6 +424,12 @@ ReactiveExecutor <- R6::R6Class("ReactiveExecutor",
         assign("input", dummy_input, envir = eval_env)
       }
 
+      # Expose the session object so reactive expressions can reach
+      # session$ns(), session$clientData, etc.
+      if (!is.null(self$session)) {
+        assign("session", self$session, envir = eval_env)
+      }
+
       log_debug("[Executor] execute_reactive: evaluating expr:", paste(deparse(expr), collapse = " "), "\n", file = stderr())
       # Evaluate expression with error handling
       result <- tryCatch(
@@ -481,14 +488,70 @@ ReactiveExecutor <- R6::R6Class("ReactiveExecutor",
       ast_to_expr_fn <- self$get_helper_function("ast_to_expr")
       expr <- ast_to_expr_fn(node$expr)
 
-      # Get dependency values
-      eval_env <- new.env(parent = self$execution_env)
+      # Build an evaluation environment that mirrors what reactive/render get:
+      # the input proxy, getter functions for any reactive dependencies, and the
+      # session object. Without this, observers (and observeEvent handlers) could
+      # not read input$x or call session$sendCustomMessage().
+      eval_env <- new.env(parent = globalenv())
 
-      # Add input proxy (would get from app context)
-      # assign("input", input_proxy, envir = eval_env)
+      for (dep_id in node$deps) {
+        if (grepl("^input\\.", dep_id)) next
+        dep_name <- NULL
+        app <- self$get_app()
+        if (!is.null(app) && !is.null(app$builder) && !is.null(app$builder$reactive_context)) {
+          reactive_sources <- tryCatch(app$builder$reactive_context$reactive_sources,
+                                        error = function(e) NULL)
+          if (!is.null(reactive_sources) && is.environment(reactive_sources)) {
+            for (var_name in ls(envir = reactive_sources, all.names = TRUE)) {
+              if (identical(get(var_name, envir = reactive_sources, inherits = FALSE), dep_id)) {
+                dep_name <- var_name
+                break
+              }
+            }
+          }
+        }
+        if (is.null(dep_name)) dep_name <- gsub("^[^.]+\\.", "", dep_id)
+        local({
+          dep_node_id <- dep_id
+          exec <- self
+          assign(dep_name, function() exec$get_value(dep_node_id), envir = eval_env)
+        })
+      }
 
-      # Evaluate (side effects)
-      eval(expr, envir = eval_env)
+      input_proxy <- self$create_input_proxy()
+      if (!is.null(input_proxy)) {
+        assign("input", input_proxy, envir = eval_env)
+      }
+      if (!is.null(self$session)) {
+        assign("session", self$session, envir = eval_env)
+      }
+
+      # For observeEvent, honour ignoreNULL: skip the handler when the event
+      # expression evaluates to NULL/empty (matches Shiny's default).
+      if (isTRUE(node$metadata$event_driven) && !is.null(node$metadata$event_expr)) {
+        ignore_null <- if (is.null(node$metadata$ignoreNULL)) TRUE else isTRUE(node$metadata$ignoreNULL)
+        if (ignore_null) {
+          event_val <- tryCatch(
+            eval(ast_to_expr_fn(node$metadata$event_expr), envir = eval_env),
+            error = function(e) NULL
+          )
+          truthy <- !is.null(event_val) && !(length(event_val) == 0) &&
+            !(is.character(event_val) && length(event_val) == 1 && !nzchar(event_val))
+          if (!truthy) {
+            if (node$once) node$metadata$executed <- TRUE
+            return(NULL)
+          }
+        }
+      }
+
+      # Evaluate (side effects), swallowing silent errors from req()/validate().
+      tryCatch(
+        eval(expr, envir = eval_env),
+        shiny.silent.error = function(e) NULL,
+        error = function(e) {
+          log_debug("[Executor] execute_observer: error:", conditionMessage(e), "\n", file = stderr())
+        }
+      )
 
       # Mark as executed if once
       if (node$once) {
@@ -688,6 +751,11 @@ ReactiveExecutor <- R6::R6Class("ReactiveExecutor",
         # This prevents "object 'input' not found" errors
         dummy_input <- structure(list(), class = "InputProxy")
         assign("input", dummy_input, envir = eval_env)
+      }
+
+      # Expose the session object to render expressions.
+      if (!is.null(self$session)) {
+        assign("session", self$session, envir = eval_env)
       }
 
       log_debug("[Executor] execute_render: evaluating expr:", paste(deparse(expr), collapse = " "), "\n", file = stderr())

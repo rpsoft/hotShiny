@@ -474,13 +474,16 @@ incProgress <- function(amount = 0.1, message = NULL, detail = NULL,
 #' @return Current session or NULL
 #' @export
 getDefaultReactiveDomain <- function() {
-  # Try to get session from various places
-  # 1. Check if we're in a reactive context
   tryCatch({
-    # Check for executor's session
+    # 1. The active session set during server execution / reactive evaluation.
+    session <- get_current_session()
+    if (!is.null(session)) {
+      return(session)
+    }
+    # 2. Fall back to the executor's session if one has been attached.
     executor <- get_executor()
-    if (!is.null(executor) && !is.null(executor$app)) {
-      return(executor$app)
+    if (!is.null(executor) && !is.null(executor$session)) {
+      return(executor$session)
     }
     NULL
   }, error = function(e) NULL)

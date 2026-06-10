@@ -272,6 +272,73 @@ runApp <- function(app_file, port = 3838, host = "127.0.0.1", watch_paths = NULL
   invisible(app_obj)
 }
 
+# Walk a UI tag tree and collect the default input values declared in the
+# markup. Returns a named list mapping inputId -> default value (character).
+#
+# The very first render happens server-side before the browser has sent its
+# initial input values over the WebSocket, so without these defaults an output
+# that does e.g. `input$bins + 1` sees an empty value and errors on first load
+# (the error disappears on refresh only because the value persists from the
+# previous session). Seeding the declared defaults makes the first render match
+# what the client will report.
+extract_input_defaults <- function(ui) {
+  defaults <- new.env(parent = emptyenv())
+
+  is_tag <- function(x) is.list(x) && !is.null(x$name) && !is.null(x$attribs)
+
+  # Find the value of the selected <option> within a <select>'s children,
+  # falling back to the first option (the browser's default selection).
+  find_selected_option <- function(children) {
+    first_value <- NULL
+    found <- NULL
+    scan <- function(nodes) {
+      for (child in nodes) {
+        if (is_tag(child) && identical(child$name, "option")) {
+          if (is.null(first_value)) first_value <<- child$attribs[["value"]]
+          if (!is.null(child$attribs[["selected"]])) {
+            found <<- child$attribs[["value"]]
+            return(invisible())
+          }
+        } else if (is.list(child)) {
+          scan(if (is_tag(child)) child$children else child)
+          if (!is.null(found)) return(invisible())
+        }
+      }
+    }
+    scan(children)
+    if (!is.null(found)) found else first_value
+  }
+
+  walk <- function(x) {
+    if (is_tag(x)) {
+      attribs <- x$attribs
+      id <- attribs[["data-input-id"]]
+      if (!is.null(id) && nzchar(as.character(id))) {
+        id <- as.character(id)
+        if (identical(x$name, "select")) {
+          sel <- find_selected_option(x$children)
+          if (!is.null(sel)) defaults[[id]] <- as.character(sel)
+        } else if (identical(as.character(attribs[["type"]]), "checkbox") &&
+                   is.null(attribs[["value"]])) {
+          # Single checkbox: its value is its checked state.
+          defaults[[id]] <- if (!is.null(attribs[["checked"]])) "TRUE" else "FALSE"
+        } else if (!is.null(attribs[["checked"]])) {
+          # A checked option within a radio / checkbox group wins over siblings.
+          if (!is.null(attribs[["value"]])) defaults[[id]] <- as.character(attribs[["value"]])
+        } else if (!is.null(attribs[["value"]]) && is.null(defaults[[id]])) {
+          defaults[[id]] <- as.character(attribs[["value"]])
+        }
+      }
+      for (child in x$children) walk(child)
+    } else if (is.list(x)) {
+      for (child in x) walk(child)
+    }
+  }
+
+  tryCatch(walk(ui), error = function(e) NULL)
+  as.list(defaults)
+}
+
 #' HotShiny App
 #'
 #' Main application object
@@ -428,7 +495,20 @@ HotShinyApp <- R6::R6Class("HotShinyApp",
         } else {
           output <- OutputProxyClass$new(builder = self$builder)
         }
-        session <- NULL # Would create session object
+
+        # Create a real session object (third server argument). This makes
+        # session$sendCustomMessage / modules / userData work and lets
+        # getDefaultReactiveDomain() find the active domain.
+        session <- tryCatch(
+          ShinySession$new(app = self, input = input, output = output),
+          error = function(e) NULL
+        )
+        if (!is.null(session)) {
+          self$executor$session <- session
+          set_current_session(session)
+        }
+        # Allow stopApp() to halt this app's event loop.
+        tryCatch(set_running_app(self), error = function(e) NULL)
 
         # Call server function - attach functions to its environment
         if (is.function(self$server)) {
@@ -670,6 +750,23 @@ HotShinyApp <- R6::R6Class("HotShinyApp",
         # set_executor(NULL)
       })
 
+      # Seed default input values declared in the UI so the first render (which
+      # runs before the client sends its initial input values) uses the declared
+      # defaults rather than empty values. Only set values that haven't been set
+      # yet so we never clobber state preserved across a hot reload.
+      tryCatch({
+        ui_defaults <- extract_input_defaults(self$ui)
+        for (input_id in names(ui_defaults)) {
+          node_id <- paste0("input.", input_id)
+          if (is.null(self$state_manager$get_value(node_id))) {
+            self$state_manager$set_value(node_id, ui_defaults[[input_id]])
+            log_debug("[App] Seeded default input value:", node_id, "=", ui_defaults[[input_id]], "\n", file = stderr())
+          }
+        }
+      }, error = function(e) {
+        log_debug("[App] Error seeding UI input defaults:", conditionMessage(e), "\n", file = stderr())
+      })
+
       # Start HTTP server using httpuv
       self$start_http_server(host, port, ...)
 
@@ -776,6 +873,35 @@ HotShinyApp <- R6::R6Class("HotShinyApp",
                     status = 404L,
                     headers = list("Content-Type" = "text/plain"),
                     body = paste("File not found:", path)
+                  ))
+                }
+              }
+
+              # Serve files registered via addResourcePath() (htmlwidgets etc.)
+              if (method == "GET") {
+                resolved <- tryCatch(resolve_resource_path(path), error = function(e) NULL)
+                if (!is.null(resolved)) {
+                  ext <- tools::file_ext(resolved)
+                  content_type <- switch(ext,
+                    "js" = "application/javascript",
+                    "css" = "text/css",
+                    "html" = "text/html",
+                    "json" = "application/json",
+                    "png" = "image/png",
+                    "jpg" = "image/jpeg",
+                    "jpeg" = "image/jpeg",
+                    "gif" = "image/gif",
+                    "svg" = "image/svg+xml",
+                    "woff" = "font/woff",
+                    "woff2" = "font/woff2",
+                    "ttf" = "font/ttf",
+                    "map" = "application/json",
+                    "text/plain"
+                  )
+                  return(list(
+                    status = 200L,
+                    headers = list("Content-Type" = content_type),
+                    body = readBin(resolved, "raw", file.info(resolved)$size)
                   ))
                 }
               }
@@ -970,6 +1096,8 @@ HotShinyApp <- R6::R6Class("HotShinyApp",
         '  <script src="/static/dom-diff.js"></script>\n',
         '  <script src="/static/inputs.js"></script>\n',
         '  <script src="/static/hotshiny.js"></script>\n',
+        "  <!-- Shiny JS compatibility shim (Shiny.setInputValue, custom message handlers, bindings) -->\n",
+        '  <script src="/static/shiny-compat.js"></script>\n',
         "  <script>\n",
         "    console.log('hotShiny app loaded with Bootstrap 5');\n",
         "  </script>\n",
