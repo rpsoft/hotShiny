@@ -39,3 +39,14 @@ server <- function(input, output, session) {
              main = paste("Histogram of waiting times"))
     })
 }
+
+# Create and run app
+app_obj <- app(ui, server)
+
+# Enable hot reload (in development)
+enable_hot_reload(app_obj)
+
+# Run app
+# The server will start and be accessible at http://localhost:3838
+# Press ESC or Ctrl+C to stop the server
+app_obj$runApp(port = 3838)

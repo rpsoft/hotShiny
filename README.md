@@ -17,7 +17,10 @@ A Shiny-compatible R package that supports hot-reloading by transforming Shiny's
 
 ```r
 # Install from source
-devtools::install_github("yourusername/hotShiny")
+devtools::install_github("rpsoft/hotShiny")
+
+#or
+pak::pak("rpsoft/hotShiny") 
 ```
 
 ## Quick Start

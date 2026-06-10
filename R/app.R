@@ -829,6 +829,17 @@ HotShinyApp <- R6::R6Class("HotShinyApp",
         app = handlers
       )
 
+      # Ensure the server is always torn down, even if the event loop is
+      # aborted by an interrupt (Ctrl+C / ESC) or an error. on.exit handlers
+      # run during stack unwinding, so this frees the port in every case.
+      on.exit({
+        self$running <- FALSE
+        if (!is.null(self$server_handle)) {
+          httpuv::stopServer(self$server_handle)
+          self$server_handle <- NULL
+        }
+      }, add = TRUE)
+
       # Run event loop
       httpuv::service(0)
 
@@ -843,11 +854,6 @@ HotShinyApp <- R6::R6Class("HotShinyApp",
           log_debug("[EventLoop] Iteration", iter_count, "\n", file = stderr())
         }
         Sys.sleep(0.01)
-      }
-
-      # Stop server when done
-      if (!is.null(self$server_handle)) {
-        httpuv::stopServer(self$server_handle)
       }
     },
 
