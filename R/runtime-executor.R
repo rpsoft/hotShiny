@@ -367,7 +367,15 @@ ReactiveExecutor <- R6::R6Class("ReactiveExecutor",
 
       # Create evaluation environment
       # Use globalenv() as parent to ensure package functions are visible
-      eval_env <- new.env(parent = globalenv())
+      # Parent the evaluation environment to the node's captured closure (the
+      # server body). This makes live objects reachable by reconstructed
+      # expressions: reactiveVal() functions, reactiveValues objects, and any
+      # user-defined helpers/variables defined in the server. The input proxy
+      # and reactive getter functions below are overlaid as direct bindings so
+      # they shadow the originals (named reactives are not callable on their
+      # own; isolate'd inputs still read from the shared state). Falls back to
+      # globalenv() when no closure was captured.
+      eval_env <- new.env(parent = if (!is.null(node$env) && is.environment(node$env)) node$env else globalenv())
 
       # Add reactive dependency values to environment
       # Make them callable (like Shiny's reactive expressions)
@@ -492,7 +500,15 @@ ReactiveExecutor <- R6::R6Class("ReactiveExecutor",
       # the input proxy, getter functions for any reactive dependencies, and the
       # session object. Without this, observers (and observeEvent handlers) could
       # not read input$x or call session$sendCustomMessage().
-      eval_env <- new.env(parent = globalenv())
+      # Parent the evaluation environment to the node's captured closure (the
+      # server body). This makes live objects reachable by reconstructed
+      # expressions: reactiveVal() functions, reactiveValues objects, and any
+      # user-defined helpers/variables defined in the server. The input proxy
+      # and reactive getter functions below are overlaid as direct bindings so
+      # they shadow the originals (named reactives are not callable on their
+      # own; isolate'd inputs still read from the shared state). Falls back to
+      # globalenv() when no closure was captured.
+      eval_env <- new.env(parent = if (!is.null(node$env) && is.environment(node$env)) node$env else globalenv())
 
       for (dep_id in node$deps) {
         if (grepl("^input\\.", dep_id)) next
@@ -632,7 +648,15 @@ ReactiveExecutor <- R6::R6Class("ReactiveExecutor",
 
       # Create evaluation environment
       # Use globalenv() as parent to ensure package functions are visible
-      eval_env <- new.env(parent = globalenv())
+      # Parent the evaluation environment to the node's captured closure (the
+      # server body). This makes live objects reachable by reconstructed
+      # expressions: reactiveVal() functions, reactiveValues objects, and any
+      # user-defined helpers/variables defined in the server. The input proxy
+      # and reactive getter functions below are overlaid as direct bindings so
+      # they shadow the originals (named reactives are not callable on their
+      # own; isolate'd inputs still read from the shared state). Falls back to
+      # globalenv() when no closure was captured.
+      eval_env <- new.env(parent = if (!is.null(node$env) && is.environment(node$env)) node$env else globalenv())
 
       # Add reactive dependency values to environment
       # Make them callable (like Shiny's reactive expressions)
@@ -1076,10 +1100,23 @@ ReactiveExecutor <- R6::R6Class("ReactiveExecutor",
             }
           }
 
-          # Trim whitespace from input value before storing
-          value_trimmed <- trimws(as.character(value))
-          self$state_manager$set_value(node_id, value_trimmed)
-          log_debug("[Executor] set_input: stored value '", value_trimmed, "' for", node_id, "\n", file = stderr())
+          # Normalise the incoming value before storing. The client may report a
+          # scalar (most inputs) or an array (checkboxGroupInput,
+          # selectInput(multiple=TRUE), sliderInput ranges); JSON arrays arrive as
+          # lists. Preserve multi-element selections as character vectors so
+          # input$x returns a vector as in Shiny; trim only scalar strings.
+          if (is.list(value)) {
+            value <- unlist(value, use.names = FALSE)
+          }
+          if (is.null(value) || length(value) == 0) {
+            value_stored <- NULL
+          } else if (length(value) == 1) {
+            value_stored <- trimws(as.character(value))
+          } else {
+            value_stored <- as.character(value)
+          }
+          self$state_manager$set_value(node_id, value_stored)
+          log_debug("[Executor] set_input: stored value for", node_id, "(length ", length(value_stored), ")\n", file = stderr())
           # Mark input node as dirty
           self$state_manager$mark_dirty(node_id)
           log_debug("[Executor] set_input: marked", node_id, "as dirty\n", file = stderr())

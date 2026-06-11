@@ -34,8 +34,13 @@ diffing and time-travel debugging.
 - `req()`, `validate()` / `need()`, `isTruthy()`, `safeError()` — silent-error
   semantics; a failed `req()` blanks the output as in Shiny
 - `eventReactive()` — supported (see precision note under Limitations)
-- `reactiveValues()`, `reactiveVal()` — read/write supported (see Limitations)
+- `reactiveValues()`, `reactiveVal()` — full read **and write**, including
+  writes from inside observers (e.g. the counter pattern
+  `observeEvent(input$go, { rv(rv() + 1) })`)
 - `reactiveValuesToList()`, `is.reactive()`, `freezeReactiveValue()`
+- User-defined helper functions and variables declared in the server body are
+  reachable from reactive/render/observer expressions (the evaluation
+  environment is parented to the captured server closure)
 
 ### The `session` object (third server argument)
 Previously `NULL`; now a real object implementing:
@@ -56,6 +61,8 @@ etc., which all call `session$sendCustomMessage()`.
 ### Inputs
 - `input$x` is `NULL` until the client reports it (was `""`)
 - Values are restored to natural R types: `"TRUE"`→logical, `"30"`→numeric
+- Multi-value inputs return vectors: `checkboxGroupInput`,
+  `selectInput(multiple = TRUE)`, `sliderInput` ranges
 - `registerInputHandler()` / `removeInputHandler()` registry
 
 ### Static assets & the browser-side `Shiny` object
@@ -85,11 +92,13 @@ Patterns whose dependencies only exist at runtime cannot be analysed:
    ids explicitly.
 2. **Reactives/observers/outputs created in loops or `lapply`** over runtime
    data — their dependencies cannot be extracted.
-3. **Writing to `reactiveVal`/`reactiveValues` from inside an observer** —
-   reconstructed expressions cannot carry the live R object, so the write may not
-   round-trip. Reads and conservative invalidation work. When a reactive value
-   changes, hotShiny re-evaluates **all** computed nodes (correct, less precise
-   than Shiny's targeted invalidation).
+3. **Precision of reactive-value invalidation** — writes to
+   `reactiveVal`/`reactiveValues` work (including from observers), but because
+   their *reads* are not detected as static dependency edges, hotShiny refreshes
+   conservatively: on any such write it re-evaluates **all** reactive and render
+   nodes (correct, less precise than Shiny's targeted invalidation). Observers
+   are not re-run by this pass, so an observer that only *reads* a reactive value
+   (without an `input$`/event dependency) will not re-fire on that value's change.
 4. **Timers** (`invalidateLater`, `reactiveTimer`) re-run all computed nodes
    rather than only the calling context.
 5. **`debounce`/`throttle`/`bindCache`** are currently pass-through shims (no

@@ -172,12 +172,27 @@ freezeReactiveValue <- function(x, name) {
 # Conservative invalidation
 # ---------------------------------------------------------------------------
 
-# Re-run all computed nodes and push updates to clients. hotShiny tracks
-# dependencies statically; for state changes that the static analysis cannot
+# Re-run computed *value* nodes and push updates to clients. hotShiny tracks
+# dependencies statically; for state changes the static analysis cannot
 # attribute to a precise edge (reactiveVal / reactiveValues writes), we
-# conservatively re-evaluate every reactive/render/observer node. This trades
-# some precision for correctness and is invisible to app authors.
-.hotshiny_invalidate_all <- function() {
+# conservatively re-evaluate reactive and render nodes.
+#
+# The refresh is DEFERRED to the next event-loop tick rather than run inline,
+# for two reasons:
+#   1. Correctness: a reactiveVal/reactiveValues write usually happens inside an
+#      observer that is itself running during an executor pass, while the
+#      triggering input is still marked dirty. Refreshing inline would re-enter
+#      execute() and fire that observer a second time (double increments).
+#      Deferring runs the refresh after the current pass clears its dirty flags,
+#      so observers are not re-triggered.
+#   2. Coalescing: several writes in one observer collapse into a single flush.
+#
+# Observers are deliberately NOT marked dirty during the flush: re-running
+# side-effecting observers on every value change would fire them spuriously and
+# could recurse. They still run through normal input-driven dirty propagation.
+.invalidation_state <- new.env(parent = emptyenv())
+
+.hotshiny_flush <- function() {
   executor <- tryCatch(get_executor(), error = function(e) NULL)
   if (is.null(executor)) return(invisible(NULL))
   graph <- tryCatch(executor$graph, error = function(e) NULL)
@@ -188,12 +203,30 @@ freezeReactiveValue <- function(x, name) {
   if (is.null(graph)) return(invisible(NULL))
   for (node in graph$get_all_nodes()) {
     type <- tryCatch(node$type, error = function(e) NULL)
-    if (!is.null(type) && type %in% c("reactive", "render", "observe")) {
+    if (!is.null(type) && type %in% c("reactive", "render")) {
       executor$state_manager$mark_dirty(node$id)
     }
   }
   tryCatch(executor$execute(), error = function(e) NULL)
   tryCatch(executor$send_output_updates(), error = function(e) NULL)
+  invisible(NULL)
+}
+
+.hotshiny_invalidate_all <- function() {
+  if (is.null(tryCatch(get_executor(), error = function(e) NULL))) {
+    return(invisible(NULL))
+  }
+  .invalidation_state$pending <- TRUE
+  if (isTRUE(.invalidation_state$scheduled)) {
+    return(invisible(NULL))
+  }
+  .invalidation_state$scheduled <- TRUE
+  later::later(function() {
+    .invalidation_state$scheduled <- FALSE
+    if (!isTRUE(.invalidation_state$pending)) return(invisible(NULL))
+    .invalidation_state$pending <- FALSE
+    .hotshiny_flush()
+  }, delay = 0)
   invisible(NULL)
 }
 

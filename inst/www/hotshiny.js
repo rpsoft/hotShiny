@@ -349,6 +349,15 @@
             let img = element.querySelector('img');
             if (!img) {
               logDebug(` Creating new img element for plot`);
+              // Clear any leftover placeholder/error text and styling from an
+              // earlier empty/ERROR state (e.g. the transient "argument of
+              // length 0" the server emits on first render, before the client
+              // has reported its initial input values). Without this the stale
+              // text node lingers *above* the freshly-rendered plot until a
+              // full page refresh rebuilds the DOM.
+              element.textContent = '';
+              element.style.color = '';
+              element.style.padding = '';
               img = document.createElement('img');
               img.style.maxWidth = '100%';
               img.style.height = 'auto';
@@ -372,16 +381,14 @@
             logDebug(` Plot img element:`, img);
             return true;
           } else if (stringValue === '' || stringValue === 'null' || stringValue === 'undefined') {
-            // Clear the plot
+            // No value yet: leave the plot area blank rather than printing a
+            // red "not rendered" message. An output that hasn't computed yet
+            // (e.g. on first load before inputs arrive) should simply be empty,
+            // matching Shiny; the real image replaces this once it is ready.
             logDebug(` Clearing plot output (empty value)`);
-            const img = element.querySelector('img');
-            if (img) {
-              img.remove();
-            }
-            // Show error message if value is empty
-            element.textContent = 'Plot not rendered (empty value from server)';
-            element.style.color = 'red';
-            element.style.padding = '10px';
+            element.textContent = '';
+            element.style.color = '';
+            element.style.padding = '';
             return true;
           } else if (stringValue.startsWith('ERROR:')) {
             // Show error message from server
