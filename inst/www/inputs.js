@@ -12,6 +12,151 @@
   const logWarn = (...args) => { if (DEBUG()) console.warn(...args); };
 
   // ========================================================================
+  // In-place DOM morphing (used by hot reload to avoid full-app flashes)
+  // ========================================================================
+
+  // True for elements whose *contents* are owned by something other than the
+  // regenerated UI HTML, so morphing must leave their children untouched:
+  //   - shiny outputs (filled by separate WebSocket value updates)
+  //   - dynamically-inserted UI (insertUI / modals)
+  function hasManagedContents(el) {
+    if (el.nodeType !== Node.ELEMENT_NODE) return false;
+    if (el.hasAttribute('data-output-id')) return true;
+    const cls = el.classList;
+    return cls.contains('shiny-text-output') ||
+           cls.contains('shiny-html-output') ||
+           cls.contains('shiny-plot-output') ||
+           cls.contains('shiny-image-output') ||
+           cls.contains('shiny-table-output');
+  }
+
+  // True for live form controls whose user-edited value lives on the DOM
+  // property, not the attribute. We must not clobber these from new HTML.
+  function isFormControl(el) {
+    const t = el.tagName;
+    return t === 'INPUT' || t === 'SELECT' || t === 'TEXTAREA' || t === 'OPTION';
+  }
+
+  // Copy attributes from newEl onto oldEl in place (add/update/remove).
+  function syncAttributes(oldEl, newEl) {
+    const live = isFormControl(oldEl);
+    // Add / update
+    for (const attr of newEl.attributes) {
+      // Preserve user-entered values on live controls.
+      if (live && (attr.name === 'value' || attr.name === 'checked' || attr.name === 'selected')) {
+        continue;
+      }
+      if (oldEl.getAttribute(attr.name) !== attr.value) {
+        oldEl.setAttribute(attr.name, attr.value);
+      }
+    }
+    // Remove attributes no longer present
+    for (const attr of Array.from(oldEl.attributes)) {
+      if (live && (attr.name === 'value' || attr.name === 'checked' || attr.name === 'selected')) {
+        continue;
+      }
+      if (!newEl.hasAttribute(attr.name)) {
+        oldEl.removeAttribute(attr.name);
+      }
+    }
+  }
+
+  // Decide whether two nodes are "the same node" for morphing purposes.
+  function isSameNode(a, b) {
+    if (a.nodeType !== b.nodeType) return false;
+    if (a.nodeType === Node.ELEMENT_NODE) {
+      if (a.id || b.id) return a.id === b.id;
+      return a.tagName === b.tagName;
+    }
+    return true; // text / comment nodes compared by content later
+  }
+
+  // Morph the children of oldParent to match newParent, in place.
+  function morphChildren(oldParent, newParent) {
+    let oldChild = oldParent.firstChild;
+    let newChild = newParent.firstChild;
+
+    while (newChild) {
+      const nextNew = newChild.nextSibling;
+
+      if (!oldChild) {
+        // Nothing left to match against: append a clone of the new node.
+        oldParent.appendChild(newChild.cloneNode(true));
+        newChild = nextNew;
+        continue;
+      }
+
+      // Try to find a matching old node at or after the cursor (keyed by id).
+      let match = null;
+      if (newChild.nodeType === Node.ELEMENT_NODE && newChild.id) {
+        let scan = oldChild;
+        while (scan) {
+          if (scan.nodeType === Node.ELEMENT_NODE && scan.id === newChild.id) { match = scan; break; }
+          scan = scan.nextSibling;
+        }
+      }
+      if (!match && isSameNode(oldChild, newChild)) {
+        match = oldChild;
+      }
+
+      if (match) {
+        // Move the matched node into position if needed, then morph it.
+        if (match !== oldChild) oldParent.insertBefore(match, oldChild);
+        morphNode(match, newChild);
+        oldChild = match.nextSibling;
+      } else {
+        // No match: insert a clone before the current old node.
+        oldParent.insertBefore(newChild.cloneNode(true), oldChild);
+      }
+      newChild = nextNew;
+    }
+
+    // Remove any trailing old nodes that weren't matched.
+    while (oldChild) {
+      const next = oldChild.nextSibling;
+      oldParent.removeChild(oldChild);
+      oldChild = next;
+    }
+  }
+
+  // Morph a single node (oldNode) to look like newNode, in place.
+  function morphNode(oldNode, newNode) {
+    if (oldNode.nodeType === Node.TEXT_NODE || oldNode.nodeType === Node.COMMENT_NODE) {
+      if (oldNode.nodeValue !== newNode.nodeValue) oldNode.nodeValue = newNode.nodeValue;
+      return;
+    }
+
+    if (oldNode.nodeType !== Node.ELEMENT_NODE) return;
+
+    // Different tag => replace wholesale (can't morph an <a> into a <div>).
+    if (oldNode.tagName !== newNode.tagName) {
+      oldNode.parentNode.replaceChild(newNode.cloneNode(true), oldNode);
+      return;
+    }
+
+    syncAttributes(oldNode, newNode);
+
+    // Leave server-rendered / dynamically-managed contents alone.
+    if (hasManagedContents(oldNode)) return;
+
+    morphChildren(oldNode, newNode);
+  }
+
+  // Public entry point: morph `target`'s contents to match `htmlString`.
+  // Returns true on success, false if it bailed (caller should fall back).
+  function morphInnerHTML(target, htmlString) {
+    try {
+      const tpl = document.createElement('template');
+      tpl.innerHTML = htmlString;
+      morphChildren(target, tpl.content);
+      return true;
+    } catch (e) {
+      logWarn('[morph] failed, falling back to innerHTML:', e);
+      return false;
+    }
+  }
+
+  // ========================================================================
   // Input Binding Base Class
   // ========================================================================
 
@@ -939,28 +1084,35 @@
 
       const target = document.querySelector(selector);
       if (target) {
-        // Step 1: Capture current input values BEFORE replacing UI
-        let capturedState = null;
-        if (global.hotShinyInputManager) {
-          capturedState = global.hotShinyInputManager.captureAllInputState(target);
-          logDebug('[shiny-replace-ui] Captured input state before replacement');
-        }
+        // Preferred path: morph the existing DOM toward the new HTML in place.
+        // Only nodes that actually differ are touched, so unchanged parts of
+        // the app don't repaint -- no full-app flash -- and live input values,
+        // focus, scroll position and server-rendered outputs are preserved.
+        const morphed = morphInnerHTML(target, html);
 
-        // Step 2: Replace the UI with new HTML
-        target.innerHTML = html;
-
-        // Step 3: Re-initialize inputs in new content
-        if (global.hotShinyInputManager) {
-          global.hotShinyInputManager.initialize(document);
-        }
-
-        // Step 4: Restore captured input values to new DOM elements
-        if (capturedState && capturedState.size > 0 && global.hotShinyInputManager) {
-          // Small delay to ensure DOM is fully updated
-          setTimeout(() => {
-            global.hotShinyInputManager.restoreInputState(capturedState, target, true);
-            logDebug('[shiny-replace-ui] Restored input state after replacement');
-          }, 50);
+        if (!morphed) {
+          // Fallback: wholesale replace (causes a flash, but always correct).
+          // Capture/restore input state since the nodes are recreated.
+          let capturedState = null;
+          if (global.hotShinyInputManager) {
+            capturedState = global.hotShinyInputManager.captureAllInputState(target);
+          }
+          target.innerHTML = html;
+          if (global.hotShinyInputManager) {
+            global.hotShinyInputManager.initialize(document);
+          }
+          if (capturedState && capturedState.size > 0 && global.hotShinyInputManager) {
+            setTimeout(() => {
+              global.hotShinyInputManager.restoreInputState(capturedState, target, true);
+            }, 50);
+          }
+        } else {
+          // Re-initialize bindings so any newly-added inputs are wired up.
+          // Existing nodes were preserved, so their values stay intact.
+          if (global.hotShinyInputManager) {
+            global.hotShinyInputManager.initialize(document);
+          }
+          logDebug('[shiny-replace-ui] Morphed UI in place (no flash)');
         }
       } else {
         console.warn('shiny-replace-ui: Target element not found:', selector);
