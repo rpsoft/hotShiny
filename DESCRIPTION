@@ -1,9 +1,9 @@
 Package: hotShiny
 Type: Package
 Title: Shiny-Compatible Reactive Framework with Hot Reloading
-Version: 0.1.0
-Author: HotShiny Contributors
-Maintainer: HotShiny Contributors <maintainer@hotshiny.example>
+Version: 0.2.0
+Author: Jesus Rodriguez (Dark Peak Analytics)
+Maintainer: Jesus Rodriguez <jrodriguezperez@darkpeakanalytics.com>
 Description: A Shiny-compatible R package that supports hot-reloading by
     transforming Shiny's execution model into a declarative, diffable reactive
     graph. Maintains API compatibility while fundamentally changing runtime semantics.

@@ -781,17 +781,20 @@ HotShinyApp <- R6::R6Class("HotShinyApp",
 
       # Create WebSocket server
       ws_server <- NULL
-      base_path <- getwd()
-      if (!file.exists(file.path(base_path, "R"))) {
-        base_path <- system.file(package = "hotShiny")
-      }
-      load_env <- new.env(parent = asNamespace("hotShiny"))
-      ws_file <- file.path(base_path, "R/server-websocket.R")
+      ns <- asNamespace("hotShiny")
+      load_env <- new.env(parent = ns)
+      # When run from the package source tree, source the raw file (picks up
+      # local edits). When run from an installed package (e.g. an external
+      # project), the .R files aren't on disk, so fall back to the function
+      # already compiled into the namespace.
+      ws_file <- file.path(getwd(), "R/server-websocket.R")
       if (file.exists(ws_file)) {
         sys.source(ws_file, envir = load_env)
         if (exists("create_websocket_server", envir = load_env)) {
           ws_server <- get("create_websocket_server", envir = load_env)(self)
         }
+      } else if (exists("create_websocket_server", envir = ns)) {
+        ws_server <- get("create_websocket_server", envir = ns)(self)
       }
 
       # Store ws_server for later use
@@ -1057,9 +1060,13 @@ HotShinyApp <- R6::R6Class("HotShinyApp",
       host <- if (!is.null(self$server_host)) self$server_host else "127.0.0.1"
       port <- if (!is.null(self$server_port)) self$server_port else 3838
 
-      # Convert UI to HTML using tag_to_html from tags.R
+      # Convert UI to HTML using tag_to_html. Prefer the source-tree copy (if
+      # sys.source loaded it above), then the installed namespace copy, and only
+      # fall back to the weaker built-in serializer if neither is available.
       ui_html <- if (exists("tag_to_html", envir = ui_env)) {
         get("tag_to_html", envir = ui_env)(ui_result)
+      } else if (exists("tag_to_html", envir = ns, inherits = FALSE)) {
+        get("tag_to_html", envir = ns, inherits = FALSE)(ui_result)
       } else {
         self$ui_to_html(ui_result)
       }
@@ -1168,9 +1175,12 @@ HotShinyApp <- R6::R6Class("HotShinyApp",
         }
       )
 
-      # Convert UI to HTML using tag_to_html from tags.R
+      # Convert UI to HTML using tag_to_html. Prefer the source-tree copy, then
+      # the installed namespace copy, then the built-in serializer.
       ui_html <- if (exists("tag_to_html", envir = ui_env)) {
         get("tag_to_html", envir = ui_env)(ui_result)
+      } else if (exists("tag_to_html", envir = ns, inherits = FALSE)) {
+        get("tag_to_html", envir = ns, inherits = FALSE)(ui_result)
       } else {
         self$ui_to_html(ui_result)
       }
