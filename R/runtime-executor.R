@@ -384,6 +384,11 @@ ReactiveExecutor <- R6::R6Class("ReactiveExecutor",
       # globalenv() when no closure was captured.
       eval_env <- new.env(parent = if (!is.null(node$env) && is.environment(node$env)) node$env else globalenv())
 
+      # Overlay a remote browser() that pauses the browser's DevTools and ships a
+      # snapshot of the in-scope locals, instead of R's interactive debugger
+      # (which has no console attached inside the httpuv event loop).
+      self$install_remote_browser(eval_env, node)
+
       # Add reactive dependency values to environment
       # Make them callable (like Shiny's reactive expressions)
       # In Shiny, reactive() returns a function that can be called with ()
@@ -516,6 +521,11 @@ ReactiveExecutor <- R6::R6Class("ReactiveExecutor",
       # own; isolate'd inputs still read from the shared state). Falls back to
       # globalenv() when no closure was captured.
       eval_env <- new.env(parent = if (!is.null(node$env) && is.environment(node$env)) node$env else globalenv())
+
+      # Overlay a remote browser() that pauses the browser's DevTools and ships a
+      # snapshot of the in-scope locals, instead of R's interactive debugger
+      # (which has no console attached inside the httpuv event loop).
+      self$install_remote_browser(eval_env, node)
 
       for (dep_id in node$deps) {
         if (grepl("^input\\.", dep_id)) next
@@ -664,6 +674,11 @@ ReactiveExecutor <- R6::R6Class("ReactiveExecutor",
       # own; isolate'd inputs still read from the shared state). Falls back to
       # globalenv() when no closure was captured.
       eval_env <- new.env(parent = if (!is.null(node$env) && is.environment(node$env)) node$env else globalenv())
+
+      # Overlay a remote browser() that pauses the browser's DevTools and ships a
+      # snapshot of the in-scope locals, instead of R's interactive debugger
+      # (which has no console attached inside the httpuv event loop).
+      self$install_remote_browser(eval_env, node)
 
       # Add reactive dependency values to environment
       # Make them callable (like Shiny's reactive expressions)
@@ -1307,6 +1322,119 @@ ReactiveExecutor <- R6::R6Class("ReactiveExecutor",
     # Get state manager
     get_state_manager = function() {
       self$state_manager
+    },
+
+    # Overlay a remote browser() into a reconstructed expression's eval_env.
+    # When the expression hits browser(), instead of dropping into R's
+    # interactive debugger (useless inside the httpuv event loop), it captures a
+    # snapshot of the in-scope locals and broadcasts a "debug_break" message so
+    # the browser client can log the snapshot and run a JS `debugger;`. The
+    # binding shadows base::browser ONLY within this eval_env. Honours
+    # getOption("hotshiny.remote_browser", TRUE) and browser()'s `expr` arg
+    # (so browser(expr = cond) is a conditional break). Never throws.
+    install_remote_browser = function(eval_env, node) {
+      exec <- self
+      node_id <- tryCatch(node$id, error = function(e) NULL)
+      node_label <- tryCatch(
+        if (!is.null(node$output_name)) node$output_name else node_id,
+        error = function(e) node_id
+      )
+
+      remote_browser <- function(text = "", condition = NULL, expr = TRUE, skipCalls = 0L) {
+        tryCatch({
+          if (!isTRUE(getOption("hotshiny.remote_browser", TRUE))) return(invisible(NULL))
+          # Honour browser()'s expr arg: browser(expr = cond) only breaks when truthy.
+          cond <- tryCatch(isTRUE(expr), error = function(e) TRUE)
+          if (!cond) return(invisible(NULL))
+
+          frame <- parent.frame()
+          snap <- serialize_debug_snapshot(frame)
+          # input$x reads go through the proxy, so they aren't frame locals.
+          # Attach the current input values under `inputs` (what a browser()
+          # user expects to see alongside their locals).
+          snap$inputs <- tryCatch(collect_input_snapshot(exec$state_manager),
+                                   error = function(e) NULL)
+
+          app <- exec$get_app()
+          ws <- if (!is.null(app)) app$ws_server else NULL
+          if (!is.null(ws) && is.function(ws$broadcast)) {
+            payload <- list(
+              node = node_id,
+              label = if (is.null(node_label)) "(server)" else node_label,
+              values = snap
+            )
+            # Optional label from browser("...") — omit entirely when absent so it
+            # doesn't serialize to an empty {} for the client.
+            if (is.character(text) && nzchar(text)) payload$text <- text
+            ws$broadcast("debug_break", payload)
+            log_debug("[Executor] remote browser() at node", node_id, "-> debug_break sent\n", file = stderr())
+          } else {
+            log_debug("[Executor] remote browser(): no ws_server available\n", file = stderr())
+          }
+        }, error = function(e) {
+          log_debug("[Executor] remote browser() error:", conditionMessage(e), "\n", file = stderr())
+        })
+        invisible(NULL)
+      }
+
+      assign("browser", remote_browser, envir = eval_env)
+      invisible(NULL)
     }
   )
 )
+
+# Capture the in-scope variables of a debug frame as a JSON-friendly named list.
+# Skips framework machinery (the injected input/output/session proxies and the
+# reactive getter closures) and renders non-JSON-able objects as str() text so
+# the whole thing always survives jsonlite::toJSON. Never throws.
+serialize_debug_snapshot <- function(frame) {
+  tryCatch({
+    if (!is.environment(frame)) return(list())
+    skip_names <- c("input", "output", "session")
+    out <- list()
+    for (nm in ls(envir = frame, all.names = FALSE)) {
+      if (nm %in% skip_names) next
+      val <- tryCatch(get(nm, envir = frame, inherits = FALSE), error = function(e) NULL)
+      if (is.null(val)) next
+      # Drop injected machinery / anything not meaningfully inspectable.
+      if (is.function(val) || is.environment(val)) next
+      if (inherits(val, c("InputProxy", "RenderProxy", "ReactiveProxy", "R6"))) next
+      out[[nm]] <- jsonify_debug_value(val)
+    }
+    out
+  }, error = function(e) list())
+}
+
+# Pull the current input.* values out of the state manager as a named list
+# (stripping the "input." prefix), for the inputs section of a debug snapshot.
+collect_input_snapshot <- function(state_manager) {
+  tryCatch({
+    if (is.null(state_manager) || !is.function(state_manager$serialize_state)) return(NULL)
+    all_values <- state_manager$serialize_state()
+    inputs <- list()
+    for (node_id in names(all_values)) {
+      if (grepl("^input\\.", node_id)) {
+        inputs[[sub("^input\\.", "", node_id)]] <- jsonify_debug_value(all_values[[node_id]])
+      }
+    }
+    if (length(inputs) == 0) NULL else inputs
+  }, error = function(e) NULL)
+}
+
+# Coerce a single value to something jsonlite::toJSON(auto_unbox = TRUE) accepts.
+# Atomic vectors / plain lists / data.frames pass through (with a size guard);
+# everything else is rendered as the text str() would show in a real browser().
+jsonify_debug_value <- function(val) {
+  tryCatch({
+    if (is.atomic(val) || is.list(val) || is.data.frame(val)) {
+      if (is.character(val) && length(val) == 1 && nchar(val) > 2000) {
+        return(paste0(substr(val, 1, 2000), "... [truncated, length=", nchar(val), "]"))
+      }
+      return(val)
+    }
+    paste(utils::capture.output(utils::str(val)), collapse = "\n")
+  }, error = function(e) {
+    tryCatch(paste(utils::capture.output(utils::str(val)), collapse = "\n"),
+             error = function(e2) "<unserializable>")
+  })
+}

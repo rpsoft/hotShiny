@@ -191,6 +191,26 @@
       this.wsClient.registerHandler('error', (message) => {
         console.error('Server error:', message.data.message);
       });
+
+      // Remote browser() break: server hit browser() inside a render/reactive/
+      // observe expression. Log the captured R-side snapshot and pause in
+      // DevTools (debugger; is a no-op when DevTools is closed).
+      this.wsClient.registerHandler('debug_break', (message) => {
+        this.handleDebugBreak(message.data);
+      });
+    }
+
+    handleDebugBreak(data) {
+      if (window.hotShinyRemoteBrowser === false) return; // optional kill switch
+      const label = (data && (data.label || data.node)) || '(server)';
+      const values = (data && data.values) || {};
+      console.group('%c⏸ hotShiny browser() @ ' + label,
+                    'color:#c00;font-weight:bold');
+      if (data && data.text) console.log('label:', data.text);
+      console.log('R-side snapshot:', values);
+      console.log('Note: this paused the browser, not R; R has already continued.');
+      console.groupEnd();
+      debugger; // pauses only if DevTools is open; otherwise a harmless no-op
     }
 
     handleGraphUpdate(graphData) {

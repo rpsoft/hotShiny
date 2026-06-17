@@ -595,18 +595,23 @@
       return null;
     }
 
+    setValue(el, value) {
+      if (value === null || value === undefined || value === '') return;
+      const tabId = el.id;
+      const targetLink = el.querySelector(`[data-bs-target="#${tabId}-${value}"]`);
+      if (targetLink && global.bootstrap) {
+        const tab = new bootstrap.Tab(targetLink);
+        tab.show();
+      }
+    }
+
     subscribe(el, callback) {
       el.addEventListener('shown.bs.tab', callback);
     }
 
     receiveMessage(el, message) {
       if (message.selected) {
-        const tabId = el.id;
-        const targetLink = el.querySelector(`[data-bs-target="#${tabId}-${message.selected}"]`);
-        if (targetLink) {
-          const tab = new bootstrap.Tab(targetLink);
-          tab.show();
-        }
+        this.setValue(el, message.selected);
       }
     }
   }
