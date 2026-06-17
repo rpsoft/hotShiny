@@ -448,13 +448,18 @@ HotReloadEngine <- R6::R6Class("HotReloadEngine",
               assign(func_name, get(func_name, envir = load_env), envir = exec_env)
             }
           }
-          # Also make new_node_id available to render functions' environments
+          # Also make new_node_id available to render functions' environments.
+          # When running against an INSTALLED package the render functions resolve
+          # from the (sealed) package namespace, whose bindings are locked -- writing
+          # into it throws "cannot change value of locked binding" and aborts the
+          # whole reload. In that case the function already sees new_node_id via its
+          # own namespace, so skip the write for locked environments.
           if (exists("new_node_id", envir = load_env)) {
             for (render_func_name in c("renderText", "renderPlot", "renderTable", "renderDataTable", "renderUI")) {
               if (exists(render_func_name, envir = exec_env)) {
                 render_fn <- get(render_func_name, envir = exec_env)
                 render_env <- environment(render_fn)
-                if (!is.null(render_env)) {
+                if (!is.null(render_env) && !environmentIsLocked(render_env)) {
                   assign("new_node_id", get("new_node_id", envir = load_env), envir = render_env)
                 }
               }
@@ -565,11 +570,15 @@ HotReloadEngine <- R6::R6Class("HotReloadEngine",
               assign(func_name, get(func_name, envir = exec_env), envir = server_env)
             }
           }
-          # Make extract_dependencies available in reactive() function's environment
+          # Make extract_dependencies available in reactive() function's environment.
+          # Skip when reactive() comes from the sealed package namespace (installed
+          # package): its bindings are locked and it already resolves
+          # extract_dependencies from the namespace.
           if (exists("reactive", envir = exec_env)) {
             reactive_fn <- get("reactive", envir = exec_env)
             reactive_env <- environment(reactive_fn)
-            if (!is.null(reactive_env) && exists("extract_dependencies", envir = exec_env)) {
+            if (!is.null(reactive_env) && !environmentIsLocked(reactive_env) &&
+                exists("extract_dependencies", envir = exec_env)) {
               assign("extract_dependencies", get("extract_dependencies", envir = exec_env), envir = reactive_env)
             }
           }

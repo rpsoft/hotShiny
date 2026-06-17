@@ -156,7 +156,14 @@ ReactiveExecutor <- R6::R6Class("ReactiveExecutor",
       # This ensures plots and other outputs are rendered on first load
       if (inherits(node, "RenderNode")) {
         current_value <- self$state_manager$get_value(node$id)
-        if (is.null(current_value) || (is.character(current_value) && trimws(current_value) == "")) {
+        # Treat NULL / empty / NA / blank-string as "no value yet". Guard against
+        # NA and length != 1 so the `if` never sees an NA or length>1 logical
+        # (which throws "missing value where TRUE/FALSE needed").
+        no_value <- is.null(current_value) || length(current_value) == 0 ||
+          (length(current_value) == 1 &&
+             (is.na(current_value) ||
+                (is.character(current_value) && trimws(current_value) == "")))
+        if (isTRUE(no_value)) {
           log_debug("[Executor] should_execute: node", node$id, "is RenderNode with no value, executing for initial render\n", file = stderr())
           return(TRUE)
         }
