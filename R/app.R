@@ -120,7 +120,10 @@
 #'
 #' @param ui UI function or object
 #' @param server Server function
-#' @param ... Additional arguments
+#' @param ... Additional arguments. Notably `bootstrap` (default `TRUE`): set to
+#'   `FALSE` to omit the built-in Bootstrap 5 stylesheet/JS and the
+#'   `container-fluid` wrapper class -- useful when styling with Tailwind
+#'   (e.g. `shiny.tailwind::use_tailwind()`) to avoid preflight/utility clashes.
 #' @return App object
 app <- function(ui, server, ...) {
   # Create graph builder (get class and instantiate)
@@ -355,13 +358,18 @@ HotShinyApp <- R6::R6Class("HotShinyApp",
     server_host = NULL,
     server_port = NULL,
     ws_server = NULL,
-    initialize = function(ui, server, builder, executor, state_manager, ...) {
+    bootstrap = TRUE,
+    registered_deps = NULL,
+    last_head_html = NULL,
+    initialize = function(ui, server, builder, executor, state_manager, bootstrap = TRUE, ...) {
       self$ui <- ui
       self$server <- server
       self$builder <- builder
       self$executor <- executor
       self$state_manager <- state_manager
       self$running <- FALSE
+      self$bootstrap <- isTRUE(bootstrap)
+      self$registered_deps <- list()
 
       # Store server function for later execution
       self$server_func <- server
@@ -880,6 +888,51 @@ HotShinyApp <- R6::R6Class("HotShinyApp",
                 }
               }
 
+              # Content-type guesser shared by the dependency / www routes.
+              guess_ct <- function(f) {
+                switch(tools::file_ext(f),
+                  "js" = "application/javascript", "css" = "text/css",
+                  "html" = "text/html", "json" = "application/json",
+                  "png" = "image/png", "jpg" = "image/jpeg", "jpeg" = "image/jpeg",
+                  "gif" = "image/gif", "svg" = "image/svg+xml",
+                  "woff" = "font/woff", "woff2" = "font/woff2", "ttf" = "font/ttf",
+                  "map" = "application/json", "text/plain")
+              }
+
+              # Serve resolved htmlDependency files: /lib/<name>-<version>/<file>
+              if (method == "GET" && grepl("^/lib/", path)) {
+                rest <- sub("^/lib/", "", path)
+                key <- utils::URLdecode(sub("/.*$", "", rest))
+                rel <- sub("^[^/]*/", "", rest)
+                dir <- if (!is.null(self$registered_deps)) self$registered_deps[[key]] else NULL
+                if (!is.null(dir)) {
+                  full_path <- file.path(dir, rel)
+                  if (file.exists(full_path) && !dir.exists(full_path)) {
+                    return(list(
+                      status = 200L,
+                      headers = list("Content-Type" = guess_ct(full_path)),
+                      body = readBin(full_path, "raw", file.info(full_path)$size)
+                    ))
+                  }
+                }
+                return(list(status = 404L,
+                            headers = list("Content-Type" = "text/plain"),
+                            body = paste("Dependency file not found:", path)))
+              }
+
+              # Serve the app's own www/ directory (Shiny-style), e.g. a
+              # precompiled tailwind.css linked via tags$link(href="tailwind.css").
+              if (method == "GET" && path != "/" && nzchar(path)) {
+                www_path <- file.path(getwd(), "www", sub("^/", "", path))
+                if (file.exists(www_path) && !dir.exists(www_path)) {
+                  return(list(
+                    status = 200L,
+                    headers = list("Content-Type" = guess_ct(www_path)),
+                    body = readBin(www_path, "raw", file.info(www_path)$size)
+                  ))
+                }
+              }
+
               # Serve files registered via addResourcePath() (htmlwidgets etc.)
               if (method == "GET") {
                 resolved <- tryCatch(resolve_resource_path(path), error = function(e) NULL)
@@ -1060,18 +1113,62 @@ HotShinyApp <- R6::R6Class("HotShinyApp",
       host <- if (!is.null(self$server_host)) self$server_host else "127.0.0.1"
       port <- if (!is.null(self$server_port)) self$server_port else 3838
 
-      # Convert UI to HTML using tag_to_html. Prefer the source-tree copy (if
-      # sys.source loaded it above), then the installed namespace copy, and only
-      # fall back to the weaker built-in serializer if neither is available.
-      ui_html <- if (exists("tag_to_html", envir = ui_env)) {
-        get("tag_to_html", envir = ui_env)(ui_result)
-      } else if (exists("tag_to_html", envir = ns, inherits = FALSE)) {
-        get("tag_to_html", envir = ns, inherits = FALSE)(ui_result)
-      } else {
-        self$ui_to_html(ui_result)
+      # Helper to fetch a package function preferring the freshly-sourced copy.
+      get_fn <- function(name) {
+        if (exists(name, envir = ui_env)) return(get(name, envir = ui_env))
+        if (exists(name, envir = ns, inherits = FALSE)) return(get(name, envir = ns, inherits = FALSE))
+        NULL
+      }
+      tag_to_html_fn <- get_fn("tag_to_html")
+      collect_fn <- get_fn("collect_head_content")
+      resolve_fn <- get_fn("resolve_dependency")
+      bootstrap_dep_fn <- get_fn("bootstrapLib")
+
+      # Hoist head-worthy content (htmlDependency, tags$head, raw use_tailwind()
+      # <script>/<style> fragments) out of the body and into the page <head>.
+      hoisted_head <- ""
+      deps <- list()
+      ui_for_body <- ui_result
+      if (!is.null(collect_fn)) {
+        collected <- tryCatch(collect_fn(ui_result), error = function(e) NULL)
+        if (!is.null(collected)) {
+          hoisted_head <- collected$head_html
+          deps <- collected$deps
+          ui_for_body <- collected$pruned
+        }
       }
 
-      # Build complete HTML page with Bootstrap 5
+      # Convert the (pruned) UI to body HTML.
+      ui_html <- if (!is.null(tag_to_html_fn)) {
+        tag_to_html_fn(ui_for_body)
+      } else {
+        self$ui_to_html(ui_for_body)
+      }
+
+      # Assemble the dependency list: Bootstrap first (unless opted out or the
+      # user supplied their own), then any dependencies found in the UI.
+      dep_names <- vapply(deps, function(d) d$name, character(1))
+      if (isTRUE(self$bootstrap) && !("bootstrap" %in% dep_names) && !is.null(bootstrap_dep_fn)) {
+        deps <- c(list(bootstrap_dep_fn()), deps)
+      }
+
+      # Resolve dependencies to <head> tags and register their file dirs so the
+      # /lib/<name>-<version>/ route can serve them.
+      dep_head <- character(0)
+      if (!is.null(resolve_fn)) {
+        if (is.null(self$registered_deps)) self$registered_deps <- list()
+        for (d in deps) {
+          res <- tryCatch(resolve_fn(d), error = function(e) NULL)
+          if (!is.null(res)) {
+            dep_head <- c(dep_head, res$html)
+            self$registered_deps[[res$key]] <- res$dir
+          }
+        }
+      }
+
+      container_class <- if (isTRUE(self$bootstrap)) "container-fluid py-3" else ""
+
+      # Build complete HTML page.
       html <- paste0(
         "<!DOCTYPE html>\n",
         "<html lang=\"en\">\n",
@@ -1079,8 +1176,8 @@ HotShinyApp <- R6::R6Class("HotShinyApp",
         '  <meta charset="UTF-8">\n',
         '  <meta name="viewport" content="width=device-width, initial-scale=1">\n',
         "  <title>hotShiny App</title>\n",
-        "  <!-- Bootstrap 5 CSS -->\n",
-        '  <link rel="stylesheet" href="/static/bootstrap5/bootstrap.min.css">\n',
+        if (length(dep_head)) paste0("  ", paste(dep_head, collapse = "\n  "), "\n") else "",
+        if (nzchar(hoisted_head)) paste0("  ", gsub("\n", "\n  ", hoisted_head), "\n") else "",
         "  <!-- hotShiny styles -->\n",
         "  <style>\n",
         "    .shiny-input-container { margin-bottom: 1rem; }\n",
@@ -1092,11 +1189,9 @@ HotShinyApp <- R6::R6Class("HotShinyApp",
         "  </style>\n",
         "</head>\n",
         "<body>\n",
-        '  <div id="app" class="container-fluid py-3">\n',
+        '  <div id="app"', if (nzchar(container_class)) paste0(' class="', container_class, '"') else "", ">\n",
         ui_html,
         "  </div>\n",
-        "  <!-- Bootstrap 5 JS Bundle -->\n",
-        '  <script src="/static/bootstrap5/bootstrap.bundle.min.js"></script>\n',
         "  <!-- hotShiny client scripts -->\n",
         '  <script src="/static/websocket-client.js"></script>\n',
         '  <script src="/static/reactive-client.js"></script>\n',
@@ -1106,7 +1201,7 @@ HotShinyApp <- R6::R6Class("HotShinyApp",
         "  <!-- Shiny JS compatibility shim (Shiny.setInputValue, custom message handlers, bindings) -->\n",
         '  <script src="/static/shiny-compat.js"></script>\n',
         "  <script>\n",
-        "    console.log('hotShiny app loaded with Bootstrap 5');\n",
+        "    console.log('hotShiny app loaded');\n",
         "  </script>\n",
         "</body>\n",
         "</html>\n"
@@ -1175,14 +1270,47 @@ HotShinyApp <- R6::R6Class("HotShinyApp",
         }
       )
 
+      # Prune head-worthy content (htmlDependency, tags$head, raw use_tailwind()
+      # fragments) so it is NOT re-injected into the #app body on hot reload --
+      # it lives in <head> from the initial render and must stay there.
+      ui_for_body <- ui_result
+      get_fn <- function(name) {
+        if (exists(name, envir = ui_env)) return(get(name, envir = ui_env))
+        if (exists(name, envir = ns, inherits = FALSE)) return(get(name, envir = ns, inherits = FALSE))
+        NULL
+      }
+      collect_fn <- get_fn("collect_head_content")
+      resolve_fn <- get_fn("resolve_dependency")
+      if (!is.null(collect_fn)) {
+        collected <- tryCatch(collect_fn(ui_result), error = function(e) NULL)
+        if (!is.null(collected)) {
+          ui_for_body <- collected$pruned
+          # Resolve any (possibly new) dependencies, register their dirs for the
+          # /lib/ route, and stash the head HTML so the reload engine can push
+          # newly-added head content to connected clients without a page reload.
+          dep_head <- character(0)
+          if (!is.null(resolve_fn)) {
+            if (is.null(self$registered_deps)) self$registered_deps <- list()
+            for (d in collected$deps) {
+              res <- tryCatch(resolve_fn(d), error = function(e) NULL)
+              if (!is.null(res)) {
+                dep_head <- c(dep_head, res$html)
+                self$registered_deps[[res$key]] <- res$dir
+              }
+            }
+          }
+          self$last_head_html <- paste(c(dep_head, collected$head_html), collapse = "\n")
+        }
+      }
+
       # Convert UI to HTML using tag_to_html. Prefer the source-tree copy, then
       # the installed namespace copy, then the built-in serializer.
       ui_html <- if (exists("tag_to_html", envir = ui_env)) {
-        get("tag_to_html", envir = ui_env)(ui_result)
+        get("tag_to_html", envir = ui_env)(ui_for_body)
       } else if (exists("tag_to_html", envir = ns, inherits = FALSE)) {
-        get("tag_to_html", envir = ns, inherits = FALSE)(ui_result)
+        get("tag_to_html", envir = ns, inherits = FALSE)(ui_for_body)
       } else {
-        self$ui_to_html(ui_result)
+        self$ui_to_html(ui_for_body)
       }
 
       return(ui_html)

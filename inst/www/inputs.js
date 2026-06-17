@@ -148,6 +148,11 @@
 
     if (oldNode.nodeType !== Node.ELEMENT_NODE) return;
 
+    // Leave <script> nodes untouched: a cloned/replaced script inserted via the
+    // DOM does not re-execute, so morphing one would silently break it. Scripts
+    // that must run on reload are handled via the head-append path instead.
+    if (oldNode.tagName === 'SCRIPT' && newNode.tagName === 'SCRIPT') return;
+
     // Different tag => replace wholesale (can't morph an <a> into a <div>).
     if (oldNode.tagName !== newNode.tagName) {
       oldNode.parentNode.replaceChild(newNode.cloneNode(true), oldNode);
@@ -1172,6 +1177,45 @@
       } else {
         console.warn('shiny-replace-ui: Target element not found:', selector);
       }
+    });
+
+    // Append head content handler (for hot reload that introduces new
+    // dependencies / <head> content). Idempotent: a fragment already present in
+    // <head> (matched by src/href/exact markup) is skipped, so re-sending the
+    // full head on every reload is harmless.
+    global.hotShiny.wsClient.registerHandler('shiny-head-append', (message) => {
+      const html = (message.data && message.data.html) || '';
+      if (!html.trim()) return;
+
+      const tpl = document.createElement('template');
+      tpl.innerHTML = html;
+
+      for (const node of Array.from(tpl.content.childNodes)) {
+        if (node.nodeType !== Node.ELEMENT_NODE) continue;
+
+        // Dedupe: scripts by src, stylesheets by href, else by exact markup.
+        let exists = false;
+        if (node.tagName === 'SCRIPT' && node.src) {
+          exists = !!document.head.querySelector(`script[src="${CSS.escape(node.getAttribute('src'))}"]`);
+        } else if (node.tagName === 'LINK' && node.getAttribute('href')) {
+          exists = !!document.head.querySelector(`link[href="${CSS.escape(node.getAttribute('href'))}"]`);
+        } else {
+          exists = Array.from(document.head.children).some(c => c.outerHTML === node.outerHTML);
+        }
+        if (exists) continue;
+
+        // <script> inserted via innerHTML/clone won't execute; rebuild it so it
+        // runs (e.g. a newly-added Tailwind CDN script).
+        if (node.tagName === 'SCRIPT') {
+          const s = document.createElement('script');
+          for (const attr of node.attributes) s.setAttribute(attr.name, attr.value);
+          s.textContent = node.textContent;
+          document.head.appendChild(s);
+        } else {
+          document.head.appendChild(node.cloneNode(true));
+        }
+      }
+      logDebug('[shiny-head-append] Applied head content update');
     });
 
     // Update query string handler

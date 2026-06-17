@@ -1190,6 +1190,169 @@ suppressDependencies <- function(...) {
 }
 
 # ============================================================================
+# Head content / dependency hoisting
+# ============================================================================
+#
+# hotShiny renders the UI body into <div id="app"> and builds the page <head>
+# separately. To support packages that inject <head> content -- notably
+# shiny.tailwind's use_tailwind(), which emits raw HTML() <script>/<style>
+# nodes -- we walk the rendered UI tree and lift head-worthy nodes and
+# htmlDependency objects out of the body and into the page <head>.
+
+#' Is a raw HTML() node head-worthy?
+#'
+#' use_tailwind() returns `tagList(HTML("<script ...>"), HTML("<style ...>"))`,
+#' i.e. raw HTML strings rather than structured tags. We hoist those (and only
+#' those) so structured `tags$script`/`tags$style` placed in the body keep their
+#' position, matching htmltools semantics.
+#' @keywords internal
+.is_head_worthy_html <- function(x) {
+  if (!inherits(x, "html")) return(FALSE)
+  txt <- trimws(paste(as.character(x), collapse = ""))
+  grepl("^<(script|style|link|meta|title)\\b", txt, ignore.case = TRUE)
+}
+
+# Recursive worker. Returns list(node=, head=, deps=, suppress=) where `node`
+# is the pruned node to keep in the body (or NULL to drop it), `head` is a
+# character vector of head HTML fragments, `deps` a list of html_dependency
+# objects, and `suppress` names of dependencies to suppress.
+.collect_head <- function(node) {
+  empty <- list(node = node, head = character(0), deps = list(), suppress = character(0))
+  if (is.null(node)) return(list(node = NULL, head = character(0), deps = list(), suppress = character(0)))
+
+  # html_dependency: always hoist, drop from body
+  if (inherits(node, "html_dependency")) {
+    return(list(node = NULL, head = character(0), deps = list(node), suppress = character(0)))
+  }
+
+  # suppressDependencies() marker: record + drop
+  if (inherits(node, "suppress_dependencies")) {
+    return(list(node = NULL, head = character(0), deps = list(),
+                suppress = as.character(node)))
+  }
+
+  # raw head-worthy HTML (use_tailwind output): hoist
+  if (.is_head_worthy_html(node)) {
+    return(list(node = NULL, head = paste(as.character(node), collapse = ""),
+                deps = list(), suppress = character(0)))
+  }
+
+  # atomic / character / non-list: keep as-is
+  if (!is.list(node)) return(empty)
+
+  # tagList or plain list of nodes (no tag name): recurse over elements
+  is_taglist <- inherits(node, "shiny.tag.list")
+  is_plain_list <- is.list(node) && is.null(node$name) && !inherits(node, "shiny.tag")
+  if (is_taglist || is_plain_list) {
+    out <- list(); head <- character(0); deps <- list(); suppress <- character(0)
+    for (child in node) {
+      r <- .collect_head(child)
+      if (!is.null(r$node)) out[[length(out) + 1]] <- r$node
+      head <- c(head, r$head); deps <- c(deps, r$deps); suppress <- c(suppress, r$suppress)
+    }
+    if (is_taglist) class(out) <- class(node)
+    return(list(node = out, head = head, deps = deps, suppress = suppress))
+  }
+
+  # shiny.tag (has a name)
+  if (inherits(node, "shiny.tag") || !is.null(node$name)) {
+    nm <- tolower(node$name)
+    # <head> wrapper: lift its children into the page head, drop the wrapper
+    if (identical(nm, "head")) {
+      head <- character(0); deps <- list(); suppress <- character(0)
+      for (child in node$children) {
+        r <- .collect_head(child)
+        if (!is.null(r$node)) head <- c(head, tag_to_html(r$node))
+        head <- c(head, r$head); deps <- c(deps, r$deps); suppress <- c(suppress, r$suppress)
+      }
+      return(list(node = NULL, head = head, deps = deps, suppress = suppress))
+    }
+    # other tags: recurse into children, keep the node
+    out <- list(); head <- character(0); deps <- list(); suppress <- character(0)
+    for (child in node$children) {
+      r <- .collect_head(child)
+      if (!is.null(r$node)) out[[length(out) + 1]] <- r$node
+      head <- c(head, r$head); deps <- c(deps, r$deps); suppress <- c(suppress, r$suppress)
+    }
+    node$children <- out
+    return(list(node = node, head = head, deps = deps, suppress = suppress))
+  }
+
+  empty
+}
+
+#' Collect head content and dependencies from a UI tree
+#'
+#' Walks the rendered UI, lifting head-worthy content (htmlDependency objects,
+#' `tags$head()` children, and raw HTML() <script>/<style>/<link> fragments such
+#' as those produced by `shiny.tailwind::use_tailwind()`) out of the body.
+#'
+#' @param ui A rendered UI tag / tagList.
+#' @return list(head_html = character(1), deps = list of html_dependency,
+#'   pruned = UI tree with head-worthy nodes removed).
+#' @export
+collect_head_content <- function(ui) {
+  r <- .collect_head(ui)
+  suppress <- unique(r$suppress)
+
+  # Dedupe dependencies by name, drop suppressed ones.
+  deps <- list(); seen <- character(0)
+  for (d in r$deps) {
+    if (length(suppress) && d$name %in% suppress) next
+    if (d$name %in% seen) next
+    seen <- c(seen, d$name)
+    deps[[length(deps) + 1]] <- d
+  }
+
+  # Dedupe identical head fragments (singleton-style).
+  head <- r$head
+  head <- head[!duplicated(trimws(head))]
+
+  list(head_html = paste(head, collapse = "\n"),
+       deps = deps,
+       pruned = r$node)
+}
+
+#' Resolve an htmlDependency to <head> HTML, registering its file directory
+#'
+#' Produces `<link>`/`<script>` tags pointing at `/lib/<name>-<version>/<file>`
+#' and returns the base directory so the caller can serve those files.
+#'
+#' @param dep An html_dependency object.
+#' @return list(html = character(1), key = character(1), dir = character(1)) or
+#'   NULL if the dependency's files can't be located.
+#' @export
+resolve_dependency <- function(dep) {
+  if (is.null(dep) || !inherits(dep, "html_dependency")) return(NULL)
+
+  # Locate the dependency's file directory.
+  src <- dep$src
+  if (is.list(src)) src <- if (!is.null(src$file)) src$file else src[[1]]
+  dir <- NULL
+  if (!is.null(dep$package)) {
+    dir <- system.file(src, package = dep$package)
+    if (identical(dir, "")) dir <- file.path(getwd(), "inst", src)
+  } else if (!is.null(src)) {
+    dir <- src
+  }
+  if (is.null(dir) || !nzchar(dir)) return(NULL)
+
+  key <- paste0(dep$name, "-", dep$version)
+  prefix <- paste0("/lib/", utils::URLencode(key), "/")
+
+  parts <- character(0)
+  for (css in dep$stylesheet) {
+    parts <- c(parts, sprintf('<link rel="stylesheet" href="%s%s">', prefix, css))
+  }
+  for (js in dep$script) {
+    parts <- c(parts, sprintf('<script src="%s%s"></script>', prefix, js))
+  }
+  if (!is.null(dep$head)) parts <- c(parts, as.character(dep$head))
+
+  list(html = paste(parts, collapse = "\n"), key = key, dir = dir)
+}
+
+# ============================================================================
 # Print Methods
 # ============================================================================
 

@@ -71,6 +71,8 @@ export(htmlTemplate)
 export(htmlDependency)
 export(bootstrapLib)
 export(suppressDependencies)
+export(collect_head_content)
+export(resolve_dependency)
 
 # ============================================================================
 # UI Input Functions (R/ui-inputs.R)

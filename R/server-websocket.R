@@ -240,6 +240,18 @@ WebSocketServer <- R6::R6Class("WebSocketServer",
       }
     },
     
+    # Send head content to append (for hot reload that introduces new
+    # dependencies / <head> content). The client appends idempotently.
+    send_head_append = function(head_html) {
+      if (is.null(head_html) || !nzchar(head_html)) {
+        return(invisible(NULL))
+      }
+      head_data <- list(html = head_html)
+      for (conn in self$connections) {
+        self$send_message(conn, "shiny-head-append", head_data)
+      }
+    },
+
     # Send restore inputs message with preserved values
     send_restore_inputs = function(input_values) {
       if (is.null(input_values) || length(input_values) == 0) {

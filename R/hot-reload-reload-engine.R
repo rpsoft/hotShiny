@@ -12,6 +12,7 @@ HotReloadEngine <- R6::R6Class("HotReloadEngine",
     preservation_manager = NULL,
     enabled = NULL,
     last_ui_html = NULL,
+    last_head_html = NULL,
     initialize = function(app) {
       self$app <- app
       # Get classes - load them if needed
@@ -266,6 +267,17 @@ HotReloadEngine <- R6::R6Class("HotReloadEngine",
           log_debug("[HotReload] UI possibly changed, regenerating HTML to verify\n", file = stderr())
           new_ui_html <- self$app$render_app_html()
           log_debug("[HotReload] Generated new UI HTML, length:", nchar(new_ui_html), "\n", file = stderr())
+
+          # render_app_html() also recomputes hoisted <head> content as a side
+          # effect; push any new head/dependency markup to clients first so that
+          # styles/scripts referenced by the new body are available.
+          new_head_html <- self$app$last_head_html
+          if (!is.null(new_head_html) && nzchar(new_head_html) &&
+              !identical(new_head_html, self$last_head_html)) {
+            self$last_head_html <- new_head_html
+            self$app$ws_server$send_head_append(new_head_html)
+            log_debug("[HotReload] Sent head content update to clients\n", file = stderr())
+          }
 
           # Optimization: Only send if HTML actually changed
           if (is.null(self$last_ui_html) || !identical(new_ui_html, self$last_ui_html)) {
