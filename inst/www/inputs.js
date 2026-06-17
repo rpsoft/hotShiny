@@ -11,6 +11,20 @@
   const logDebug = (...args) => { if (DEBUG()) console.log(...args); };
   const logWarn = (...args) => { if (DEBUG()) console.warn(...args); };
 
+  // Interpret a value as a boolean. The server stores all scalar inputs as
+  // strings (see coerce_input_value in core-values.R), so a checkbox value
+  // arrives back as the string "FALSE"/"TRUE" -- and `!!"FALSE"` is true.
+  // Mirror the server's coercion here so checkboxes restore correctly.
+  function toBool(value) {
+    if (typeof value === 'boolean') return value;
+    if (typeof value === 'number') return value !== 0;
+    if (typeof value === 'string') {
+      const v = value.trim().toUpperCase();
+      return v === 'TRUE' || v === '1' || v === 'YES' || v === 'ON';
+    }
+    return !!value;
+  }
+
   // ========================================================================
   // In-place DOM morphing (used by hot reload to avoid full-app flashes)
   // ========================================================================
@@ -37,24 +51,30 @@
     return t === 'INPUT' || t === 'SELECT' || t === 'TEXTAREA' || t === 'OPTION';
   }
 
+  // Attributes that are owned by the client at runtime and must never be
+  // overwritten or removed by the regenerated server HTML.
+  function isClientOwnedAttr(name, live) {
+    // Binding marker: removing it would make initialize() re-subscribe an
+    // already-bound node, stacking duplicate change listeners every reload.
+    if (name === 'data-hotshiny-bound') return true;
+    // User-entered values live on the DOM property of form controls.
+    if (live && (name === 'value' || name === 'checked' || name === 'selected')) return true;
+    return false;
+  }
+
   // Copy attributes from newEl onto oldEl in place (add/update/remove).
   function syncAttributes(oldEl, newEl) {
     const live = isFormControl(oldEl);
     // Add / update
     for (const attr of newEl.attributes) {
-      // Preserve user-entered values on live controls.
-      if (live && (attr.name === 'value' || attr.name === 'checked' || attr.name === 'selected')) {
-        continue;
-      }
+      if (isClientOwnedAttr(attr.name, live)) continue;
       if (oldEl.getAttribute(attr.name) !== attr.value) {
         oldEl.setAttribute(attr.name, attr.value);
       }
     }
     // Remove attributes no longer present
     for (const attr of Array.from(oldEl.attributes)) {
-      if (live && (attr.name === 'value' || attr.name === 'checked' || attr.name === 'selected')) {
-        continue;
-      }
+      if (isClientOwnedAttr(attr.name, live)) continue;
       if (!newEl.hasAttribute(attr.name)) {
         oldEl.removeAttribute(attr.name);
       }
@@ -142,13 +162,48 @@
     morphChildren(oldNode, newNode);
   }
 
+  // Snapshot the *live* state (DOM properties, not attributes) of every form
+  // control with an id. Needed because a control's user-edited value lives on
+  // the property; if morphing has to recreate a node (e.g. an ancestor without
+  // an id shifts and gets cloned), the clone resets to its HTML default
+  // (a `checked` checkbox snaps back to true). We re-apply this afterwards.
+  function snapshotFormState(root) {
+    const state = new Map();
+    const controls = root.querySelectorAll('input[id], select[id], textarea[id]');
+    for (const el of controls) {
+      state.set(el.id, {
+        type: (el.type || '').toLowerCase(),
+        checked: el.checked,
+        value: el.value
+      });
+    }
+    return state;
+  }
+
+  // Re-apply a snapshot to the morphed DOM, keyed by id. Only ids that still
+  // exist are touched, so removed inputs are left out and brand-new inputs
+  // keep their server-provided defaults.
+  function restoreFormState(root, state) {
+    for (const [id, s] of state) {
+      const el = root.querySelector(`#${CSS.escape(id)}`);
+      if (!el) continue;
+      if (s.type === 'checkbox' || s.type === 'radio') {
+        if (el.checked !== s.checked) el.checked = s.checked;
+      } else if (el.value !== s.value) {
+        el.value = s.value;
+      }
+    }
+  }
+
   // Public entry point: morph `target`'s contents to match `htmlString`.
   // Returns true on success, false if it bailed (caller should fall back).
   function morphInnerHTML(target, htmlString) {
     try {
       const tpl = document.createElement('template');
       tpl.innerHTML = htmlString;
+      const formState = snapshotFormState(target);
       morphChildren(target, tpl.content);
+      restoreFormState(target, formState);
       return true;
     } catch (e) {
       logWarn('[morph] failed, falling back to innerHTML:', e);
@@ -385,7 +440,7 @@
     }
 
     setValue(el, value) {
-      el.checked = !!value;
+      el.checked = toBool(value);
     }
 
     receiveMessage(el, message) {
