@@ -18,10 +18,10 @@ A Shiny-compatible R package that supports hot-reloading by transforming Shiny's
 
 ```r
 # Install from source
-devtools::install_github("rpsoft/hotShiny")
+devtools::install_github("dark-peak-analytics/hotShiny")
 
 #or
-pak::pak("rpsoft/hotShiny") 
+pak::pak("dark-peak-analytics/hotShiny") 
 ```
 
 ## Quick Start
