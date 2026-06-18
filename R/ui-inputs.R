@@ -1,6 +1,36 @@
 # UI Input Functions
 # Implements all Shiny-compatible input functions
 
+# ----------------------------------------------------------------------------
+# Extra-attribute helper
+# ----------------------------------------------------------------------------
+# Lets input functions accept `...` (most usefully `class = "..."`) and forward
+# those attributes onto a chosen element -- normally the control itself (the
+# <input>/<select>/<textarea>) so users can attach utility classes (e.g.
+# Tailwind) directly: textInput("name", NULL, class = "border rounded-xl").
+#
+# `class` is appended to the element's existing class rather than replacing it;
+# any other named attribute is set (overwriting if already present). Unnamed
+# `...` entries are ignored.
+.apply_extra_attribs <- function(tag_obj, extra) {
+  if (length(extra) == 0) return(tag_obj)
+  nms <- names(extra)
+  if (is.null(nms)) return(tag_obj)
+  for (i in seq_along(extra)) {
+    nm <- nms[i]
+    val <- extra[[i]]
+    if (is.null(nm) || nm == "" || is.null(val)) next
+    if (identical(nm, "class")) {
+      existing <- tag_obj$attribs$class
+      add <- paste(as.character(val), collapse = " ")
+      tag_obj$attribs$class <- if (is.null(existing) || !nzchar(existing)) add else paste(existing, add)
+    } else {
+      tag_obj$attribs[[nm]] <- val
+    }
+  }
+  tag_obj
+}
+
 # ============================================================================
 # Text Inputs
 # ============================================================================
@@ -12,9 +42,11 @@
 #' @param value Initial value
 #' @param width Width of the input (e.g., "100%", "400px")
 #' @param placeholder Placeholder text
+#' @param ... Additional attributes applied to the `<input>` element. Most
+#'   usefully `class` (appended to the base class, e.g. for Tailwind utilities).
 #' @return A text input tag
 #' @export
-textInput <- function(inputId, label, value = "", width = NULL, placeholder = NULL) {
+textInput <- function(inputId, label, value = "", width = NULL, placeholder = NULL, ...) {
   input_tag <- tag("input", attribs = list(
     type = "text",
     id = inputId,
@@ -23,11 +55,12 @@ textInput <- function(inputId, label, value = "", width = NULL, placeholder = NU
     value = value,
     `data-input-id` = inputId
   ))
-  
+
   if (!is.null(placeholder)) {
     input_tag$attribs$placeholder <- placeholder
   }
-  
+  input_tag <- .apply_extra_attribs(input_tag, list(...))
+
   container_style <- if (!is.null(width)) paste0("width: ", validateCssUnit(width), ";") else NULL
   
   tag("div", 
@@ -56,19 +89,19 @@ textInput <- function(inputId, label, value = "", width = NULL, placeholder = NU
 #' @return A textarea input tag
 #' @export
 textAreaInput <- function(inputId, label, value = "", width = NULL, height = NULL,
-                          cols = NULL, rows = NULL, placeholder = NULL, resize = NULL) {
-  
+                          cols = NULL, rows = NULL, placeholder = NULL, resize = NULL, ...) {
+
   textarea_attribs <- list(
     id = inputId,
     name = inputId,
     class = "form-control",
     `data-input-id` = inputId
   )
-  
+
   if (!is.null(cols)) textarea_attribs$cols <- cols
   if (!is.null(rows)) textarea_attribs$rows <- rows
   if (!is.null(placeholder)) textarea_attribs$placeholder <- placeholder
-  
+
   # Build style string
   styles <- character(0)
   if (!is.null(width)) styles <- c(styles, paste0("width: ", validateCssUnit(width)))
@@ -77,8 +110,9 @@ textAreaInput <- function(inputId, label, value = "", width = NULL, height = NUL
   if (length(styles) > 0) {
     textarea_attribs$style <- paste(styles, collapse = "; ")
   }
-  
+
   textarea_tag <- tag("textarea", attribs = textarea_attribs, children = list(value))
+  textarea_tag <- .apply_extra_attribs(textarea_tag, list(...))
   
   container_style <- if (!is.null(width)) paste0("width: ", validateCssUnit(width), ";") else NULL
   
@@ -103,7 +137,7 @@ textAreaInput <- function(inputId, label, value = "", width = NULL, height = NUL
 #' @param placeholder Placeholder text
 #' @return A password input tag
 #' @export
-passwordInput <- function(inputId, label, value = "", width = NULL, placeholder = NULL) {
+passwordInput <- function(inputId, label, value = "", width = NULL, placeholder = NULL, ...) {
   input_tag <- tag("input", attribs = list(
     type = "password",
     id = inputId,
@@ -112,11 +146,12 @@ passwordInput <- function(inputId, label, value = "", width = NULL, placeholder 
     value = value,
     `data-input-id` = inputId
   ))
-  
+
   if (!is.null(placeholder)) {
     input_tag$attribs$placeholder <- placeholder
   }
-  
+  input_tag <- .apply_extra_attribs(input_tag, list(...))
+
   container_style <- if (!is.null(width)) paste0("width: ", validateCssUnit(width), ";") else NULL
   
   tag("div",
@@ -142,7 +177,7 @@ passwordInput <- function(inputId, label, value = "", width = NULL, placeholder 
 #' @param width Width of the input
 #' @return A numeric input tag
 #' @export
-numericInput <- function(inputId, label, value, min = NA, max = NA, step = NA, width = NULL) {
+numericInput <- function(inputId, label, value, min = NA, max = NA, step = NA, width = NULL, ...) {
   input_attribs <- list(
     type = "number",
     id = inputId,
@@ -151,13 +186,14 @@ numericInput <- function(inputId, label, value, min = NA, max = NA, step = NA, w
     value = value,
     `data-input-id` = inputId
   )
-  
+
   if (!is.na(min)) input_attribs$min <- min
   if (!is.na(max)) input_attribs$max <- max
   if (!is.na(step)) input_attribs$step <- step
-  
+
   input_tag <- tag("input", attribs = input_attribs)
-  
+  input_tag <- .apply_extra_attribs(input_tag, list(...))
+
   container_style <- if (!is.null(width)) paste0("width: ", validateCssUnit(width), ";") else NULL
   
   tag("div",
@@ -189,8 +225,8 @@ numericInput <- function(inputId, label, value, min = NA, max = NA, step = NA, w
 #' @return A select input tag
 #' @export
 selectInput <- function(inputId, label, choices, selected = NULL, multiple = FALSE,
-                        selectize = TRUE, width = NULL, size = NULL) {
-  
+                        selectize = TRUE, width = NULL, size = NULL, ...) {
+
   # Normalize choices to named list
   choices <- normalizeChoices(choices)
   
@@ -214,9 +250,10 @@ selectInput <- function(inputId, label, choices, selected = NULL, multiple = FAL
   
   if (multiple) select_attribs$multiple <- "multiple"
   if (!is.null(size) && !selectize) select_attribs$size <- size
-  
+
   select_tag <- tag("select", attribs = select_attribs, children = options)
-  
+  select_tag <- .apply_extra_attribs(select_tag, list(...))
+
   container_style <- if (!is.null(width)) paste0("width: ", validateCssUnit(width), ";") else NULL
   
   tag("div",
@@ -292,8 +329,8 @@ varSelectizeInput <- function(inputId, label, data, selected = NULL, multiple = 
 #' @return Radio buttons tag
 #' @export
 radioButtons <- function(inputId, label, choices = NULL, selected = NULL, inline = FALSE,
-                         width = NULL, choiceNames = NULL, choiceValues = NULL) {
-  
+                         width = NULL, choiceNames = NULL, choiceValues = NULL, ...) {
+
   # Handle choiceNames/choiceValues
   if (!is.null(choiceNames) && !is.null(choiceValues)) {
     choices <- setNames(as.list(choiceValues), choiceNames)
@@ -335,8 +372,8 @@ radioButtons <- function(inputId, label, choices = NULL, selected = NULL, inline
   })
   
   container_style <- if (!is.null(width)) paste0("width: ", validateCssUnit(width), ";") else NULL
-  
-  tag("div",
+
+  container <- tag("div",
     attribs = list(
       id = inputId,
       class = "form-group shiny-input-radiogroup shiny-input-container",
@@ -348,6 +385,8 @@ radioButtons <- function(inputId, label, choices = NULL, selected = NULL, inline
       radios
     )
   )
+  # Grouped input: extra attributes / class go on the group container.
+  .apply_extra_attribs(container, list(...))
 }
 
 #' Create a single checkbox input
@@ -358,7 +397,7 @@ radioButtons <- function(inputId, label, choices = NULL, selected = NULL, inline
 #' @param width Width of the container
 #' @return A checkbox input tag
 #' @export
-checkboxInput <- function(inputId, label, value = FALSE, width = NULL) {
+checkboxInput <- function(inputId, label, value = FALSE, width = NULL, ...) {
   input_tag <- tag("input", attribs = list(
     type = "checkbox",
     id = inputId,
@@ -367,12 +406,13 @@ checkboxInput <- function(inputId, label, value = FALSE, width = NULL) {
     `data-input-id` = inputId,
     checked = if (value) "checked" else NULL
   ))
-  
+  input_tag <- .apply_extra_attribs(input_tag, list(...))
+
   label_tag <- tag("label",
     attribs = list(class = "form-check-label", `for` = inputId),
     children = list(label)
   )
-  
+
   container_style <- if (!is.null(width)) paste0("width: ", validateCssUnit(width), ";") else NULL
   
   tag("div",
@@ -397,8 +437,8 @@ checkboxInput <- function(inputId, label, value = FALSE, width = NULL) {
 #' @return A checkbox group tag
 #' @export
 checkboxGroupInput <- function(inputId, label, choices = NULL, selected = NULL, inline = FALSE,
-                                width = NULL, choiceNames = NULL, choiceValues = NULL) {
-  
+                                width = NULL, choiceNames = NULL, choiceValues = NULL, ...) {
+
   # Handle choiceNames/choiceValues
   if (!is.null(choiceNames) && !is.null(choiceValues)) {
     choices <- setNames(as.list(choiceValues), choiceNames)
@@ -435,8 +475,8 @@ checkboxGroupInput <- function(inputId, label, choices = NULL, selected = NULL, 
   })
   
   container_style <- if (!is.null(width)) paste0("width: ", validateCssUnit(width), ";") else NULL
-  
-  tag("div",
+
+  container <- tag("div",
     attribs = list(
       id = inputId,
       class = "form-group shiny-input-checkboxgroup shiny-input-container",
@@ -448,6 +488,8 @@ checkboxGroupInput <- function(inputId, label, choices = NULL, selected = NULL, 
       checkboxes
     )
   )
+  # Grouped input: extra attributes / class go on the group container.
+  .apply_extra_attribs(container, list(...))
 }
 
 # ============================================================================
@@ -474,7 +516,7 @@ checkboxGroupInput <- function(inputId, label, choices = NULL, selected = NULL, 
 dateInput <- function(inputId, label, value = NULL, min = NULL, max = NULL,
                       format = "yyyy-mm-dd", startview = "month", weekstart = 0,
                       language = "en", width = NULL, autoclose = TRUE,
-                      datesdisabled = NULL, daysofweekdisabled = NULL) {
+                      datesdisabled = NULL, daysofweekdisabled = NULL, ...) {
   
   # Format value
   if (is.null(value)) {
@@ -507,9 +549,10 @@ dateInput <- function(inputId, label, value = NULL, min = NULL, max = NULL,
   }
   
   input_tag <- tag("input", attribs = input_attribs)
-  
+  input_tag <- .apply_extra_attribs(input_tag, list(...))
+
   container_style <- if (!is.null(width)) paste0("width: ", validateCssUnit(width), ";") else NULL
-  
+
   tag("div",
     attribs = list(
       class = "form-group shiny-input-container",
@@ -629,7 +672,7 @@ dateRangeInput <- function(inputId, label, start = NULL, end = NULL, min = NULL,
 sliderInput <- function(inputId, label, min, max, value, step = NULL, round = FALSE,
                         ticks = TRUE, animate = FALSE, width = NULL, sep = ",",
                         pre = NULL, post = NULL, timeFormat = NULL, timezone = NULL,
-                        dragRange = TRUE) {
+                        dragRange = TRUE, ...) {
   
   # Check if range slider (two values)
   is_range <- length(value) == 2
@@ -672,7 +715,8 @@ sliderInput <- function(inputId, label, min, max, value, step = NULL, round = FA
   }
   
   input_tag <- tag("input", attribs = input_attribs)
-  
+  input_tag <- .apply_extra_attribs(input_tag, list(...))
+
   # Value display
   value_display <- tag("output",
     attribs = list(
@@ -838,8 +882,8 @@ submitButton <- function(text = "Submit", icon = NULL, width = NULL) {
 #' @export
 fileInput <- function(inputId, label, multiple = FALSE, accept = NULL, width = NULL,
                       buttonLabel = "Browse...", placeholder = "No file selected",
-                      capture = NULL) {
-  
+                      capture = NULL, ...) {
+
   input_attribs <- list(
     type = "file",
     id = inputId,
@@ -847,12 +891,13 @@ fileInput <- function(inputId, label, multiple = FALSE, accept = NULL, width = N
     class = "form-control",
     `data-input-id` = inputId
   )
-  
+
   if (multiple) input_attribs$multiple <- "multiple"
   if (!is.null(accept)) input_attribs$accept <- paste(accept, collapse = ",")
   if (!is.null(capture)) input_attribs$capture <- capture
-  
+
   input_tag <- tag("input", attribs = input_attribs)
+  input_tag <- .apply_extra_attribs(input_tag, list(...))
   
   container_style <- if (!is.null(width)) paste0("width: ", validateCssUnit(width), ";") else NULL
   
