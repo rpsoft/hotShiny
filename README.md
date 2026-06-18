@@ -6,9 +6,10 @@ A Shiny-compatible R package that supports hot-reloading by transforming Shiny's
 
 ## Features
 
-- **Hot Reload**: Preserve application state while reloading code changes
+- **Hot Reload**: Preserve application state while reloading code changes, morphing the DOM in place so only changed nodes update (no full-page flash, inputs and scroll position are preserved)
 - **Graph-Based Reactivity**: Reactive expressions are represented as a versioned, diffable graph
 - **Shiny-Compatible API**: Most Shiny apps work without modification
+- **Tailwind CSS Support**: First-class [`shiny.tailwind`](https://github.com/kylebutts/shiny.tailwind) compatibility, head/dependency hoisting, an opt-out for the built-in Bootstrap, and utility classes straight on inputs (e.g. `textInput("name", NULL, class = "border rounded-xl")`)
 - **Modern Client**: Vanilla JavaScript client with DOM diffing
 - **Strict Mode**: Detect side effects and non-deterministic code
 - **Time-Travel Debugging**: Replay reactivity and inspect graph history
@@ -17,10 +18,10 @@ A Shiny-compatible R package that supports hot-reloading by transforming Shiny's
 
 ```r
 # Install from source
-devtools::install_github("rpsoft/hotShiny")
+devtools::install_github("dark-peak-analytics/hotShiny")
 
 #or
-pak::pak("rpsoft/hotShiny") 
+pak::pak("dark-peak-analytics/hotShiny") 
 ```
 
 ## Quick Start
@@ -54,6 +55,90 @@ enable_hot_reload(app_obj)
 # Run app
 app_obj$runApp()
 ```
+
+## Styling with Tailwind CSS
+
+hotShiny is compatible with the [`shiny.tailwind`](https://github.com/kylebutts/shiny.tailwind)
+package and adds a few conveniences for styling apps with Tailwind utility
+classes.
+
+### 1. Add utility classes to any UI function
+
+Every input/UI function accepts extra attributes via `...`. The most useful is
+`class`, which is **appended** to the element's base class rather than replacing
+it — so you can attach Tailwind utilities directly, no wrapper `div` required:
+
+```r
+ui <- function() {
+  div(
+    textInput("name", NULL, class = "border rounded-xl w-full px-3 py-2"),
+    actionButton("go", "Submit", class = "px-4 py-2 bg-blue-600 text-white rounded-lg"),
+    selectInput("opt", "Choose", c("a", "b"), class = "ring-2 ring-blue-300")
+  )
+}
+```
+
+For single-control inputs the class lands on the control itself
+(`<input>`/`<select>`/`<textarea>`); for grouped inputs (`radioButtons`,
+`checkboxGroupInput`) it lands on the group container. Any other attribute
+(`style`, `data-*`, `aria-*`, …) is forwarded the same way.
+
+### 2. Quick start — browser JIT (no build step)
+
+`use_tailwind()` loads Tailwind's in-browser JIT compiler from a CDN. hotShiny
+automatically hoists its `<script>`/`<style>` into the page `<head>`, and because
+hot reload only morphs the app body, the compiler keeps running and restyles new
+classes instantly on every reload. Set `bootstrap = FALSE` so Tailwind's
+preflight reset has a clean slate:
+
+```r
+library(hotShiny)
+library(shiny.tailwind)
+
+ui <- function() {
+  div(
+    use_tailwind(),  # head content is hoisted automatically
+    div(class = "max-w-xl mx-auto mt-10 p-8 bg-white rounded-2xl shadow-lg",
+      h1(class = "text-3xl font-bold text-blue-600", "hotShiny + Tailwind"),
+      textInput("name", NULL, class = "mt-4 border rounded-lg px-3 py-2 w-full"),
+      div(class = "mt-4 text-gray-700", textOutput("greeting"))
+    )
+  )
+}
+
+server <- function(input, output, session) {
+  output$greeting <- renderText(paste0("Hello, ", input$name))
+}
+
+app_obj <- app(ui, server, bootstrap = FALSE)  # drop the built-in Bootstrap 5
+enable_hot_reload(app_obj)
+app_obj$runApp()
+```
+
+If `shiny.tailwind` isn't installed you can inline the same CDN script yourself
+with `HTML('<script src="https://unpkg.com/@tailwindcss/browser@4"></script>')`
+— hotShiny hoists raw `<script>`/`<style>` head fragments just the same.
+
+### 3. Precompiled CSS (production)
+
+For production you can ship a precompiled stylesheet instead of the CDN
+compiler. Compile your CSS (e.g. with `shiny.tailwind::compile_tailwindcss()`)
+into the app's `www/` directory — hotShiny serves `www/` like Shiny does — and
+link it from `tags$head()`:
+
+```r
+ui <- function() {
+  div(
+    tags$head(tags$link(rel = "stylesheet", href = "tailwind.min.css")),
+    h1(class = "text-3xl font-bold text-blue-600", "Hello")
+  )
+}
+
+app_obj <- app(ui, server, bootstrap = FALSE)
+```
+
+`tags$head()` content and `htmlDependency()` objects are hoisted into the page
+`<head>` automatically, so other dependency-based packages work too.
 
 ## Architecture
 
